@@ -25,16 +25,19 @@ def ECNoise(f, x_b, h=0.01, M=7, mult=False):
 	if M<=3:
 		return print('Please choose M>3.')
 
+	#reshape if row vector
+	x_b.reshape(-1,1)
 	# Grab the dimension of the domain of f
-	P = np.shape(x_b)[0]	
+
+	P = x_b.shape[0]
 
 	# Hard-coded normalized direction to sample in (either random or np.ones)
-	if x_b.ndim > 1:
-		p_u = np.random.rand(P,1)
-		#p_u = np.ones((P,1))
-	else:
-		p_u = np.random.rand(P)
-		#p_u = np.ones(P)
+	#if x_b.ndim > 1:
+	p_u = np.random.rand(P,1)
+	#p_u = np.ones((P,1))
+	#else:
+	#	p_u = np.random.rand(P)
+	#p_u = np.ones(P)
 	# Normalize
 	p = p_u/np.linalg.norm(p_u)
 
