@@ -1,195 +1,153 @@
 import numpy as np
 import active_subspaces as ac
 
+class ASTARS_sim:
+	
+	def __init__(self,f,init,L1=None,var=None,mult=False,verbose=False,maxit=100): #constructor, includes function f to optimize
+		#constructor input processing
+		self.f=f
+		self.L1=L1
+		self.state=init
+		self.var=var #variance of additive noise
+		self.mult=mult
+		self.verbose=verbose
+		self.maxit=maxit
+		
+		#default internal settings, can be modified.
+		self.update_L1=False
+		self.active=None
+		self.iter=0
+		self.Window=None  #integer, window size for surrogate construction
 
-def get_mu_star(var,L_1,N):
-    
-	return ((8*var*N)/(L_1**2*(N+6)**3))**0.25
+		if init.ndim=1:
+			init.reshape(-1,1)
+		self.dim=init.shape[0] 
+		#preallocate history arrays for efficiency
+		self.xhist=np.zeros((maxit+1,dim))
+		self.fhist=np.zeros((maxit+1,1))
+		self.ghist=np.zeros((maxit,1))
+		self.yhist=np.zeros((maxit,adim))
 
+		if self.var = None:
+			h=0.01
+			while self.var == None:
+				if self.verbose:
+					print('Calling ECNoise to determine noise variance,h=',h))
+				temp=ECNoise(self.f,self.init,h=h,mult=self.mult)
+				if temp[0] > 0: #success
+					self.var=temp[0]
+					self.x_noise=temp[1]
+					self.f_noise=temp[2]
+				elif temp[0] == -1:
+					h/=100
+				elif temp[1] == -2:
+					h*=100
+		if self.L1=None:
+			if self.verbose=True:
+				print('Determing initial L1 from ECNoise Data')
+			
+	def get_mu_star(self):
+		N=self.dim
+		var=self.var
+		L_1=self.L1
+		if not self.mult:
+			self.mu_star=((8*var*N)/(L_1**2*(N+6)**3))**0.25
+		else:
+			self.mu_star=((16*var*N)/((L_1**2)*(1+3*var)*(N+6)**3))**0.25
 
+	def get_h(self):
+		L1=self.L1
+		N=self.dim
+		self.h=1/(4*L1*(N+4))
 
-def get_h(L1,N):
-
-	return 1/(4*L1*(N+4))
-
-
-def get_mult_mu_star(var,L_1,N):
-	return ((16*var*N)/((L_1**2)*(1+3*var)*(N+6)**3))**0.25
-
-
-def STARS(x_init,F,mu_star,h,active=None,mult=False,wts=None):
-    
+	def STARS_step(self):
 	'''     
-	x_init: initial x value, size Px1
-    
-	F: function we wish to minimize
-; note that lower f's are evaluations of F(*)
-    
-	mu_star: smoothing parameter
-    
-	h: step length 
-    
-	active: Should be size Pxk
-; default is none
-	mult: Set to true if mult noise; default is add noise
-	wts: Should be size Px1, filled with the weights
-	     Default is None.
-	     If using active vars, user should provide wts=ss.eigenvals    
-    
 	'''
     
-    
-	# Evaluate noisy F(x_init)
-    
-	f0 = F(x_init)
-
+    	# Evaluate noisy F(x_init)
+    	#f0 = self.f(self.x)  
+	f0 = self.fhist[iter]
 
 	# Compute mult_mu_star_k (if needed)
-	if mult is False:
-		mu_star = mu_star
+	if self.mult is False:
+		mu_star = self.mu_star
 	else:
-		mu_star = mu_star*abs(f0)**0.5    
-    
-	
+		mu_star = self.mu_star*abs(f0)**0.5    
 	# Draw a random vector of same size as x_init
     
 	if active is None:
-        
-		u = np.random.normal(0,1,(np.size(x_init),1))
-        
-    
+		u = np.random.normal(0,1,(self.dim,1))
 	else:
-        
-		act_dim = active.shape[1]
-
-        
+		#act_dim = active.shape[1] set elsewhere
 		if wts is None:
 			lam = np.random.normal(0,1,(act_dim,1))
-
 		else:
 			lam = np.zeros((act_dim,1))
 			for i in range(act_dim):
 				lam[i]=np.random.normal(0,wts[0][0]/wts[i][0])        
-		
 		u = active@lam
     
-    
-    
-	
 	# Form vector y, which is a random walk away from x_init
-   
-	y = x_init + (mu_star)*u
-    
-    
-	
+	y = self.x + mu_star*u
 	# Evaluate noisy F(y)
-    
-	g = F(y)
-    
-    
-	
+	g = self.f(y)
 	# Form finite-difference "gradient oracle"
-    
-	s = ((g - f0)/mu_star)*u 
-    
-    
-	
+	s = ((g - f0)/self.mu_star)*u 
 	# Take descent step in direction of -s smooth by h to get next iterate, x_1
-    
-	x = x_init - (h)*s
-   
-    
+	self.x -= -(self.h)*s
+	# stack here
+	self.iter+=1
+	self.xhist[:,iter]=self.x
+	self.fhist[iter]=self.f(self.x) #compute new f value
+	self.yhist[:,iter]=self.y
+	self.ghist[iter]=g
 	
-	# Evaluate noisy F(x_1)
-    
-	f1 = F(x)
-    
-    
-	
-	# Form upper bound for L_1
-    
-	#d1 = (f0-g)*(1/mu_star)
-	d1 = (f0-g)
-    
-	#d2 = (g-f1)*(1/h)
-	d2 = (g-f1)
-    
-	avg_step = .5*mu_star**2+.5*h**2
-    
-	L_1_B = abs(d2-d1)/avg_step    
-        
-    
-	
-	return [x, f1, y, g, x_init, f0, L_1_B]
+	if self.update_L1=True and self.mult=False:
+		#call get update_L1:  approximates by regularized quadratic
+		#not implemented for multiplicative noise yet
+		
+		self.L1=np.max(L1,self.L1)
 
+def compute_active(self)
 
-	
-	#if f1<=f0:
-		#return [x, f1, y, g, x_init, f0, L_1_B]
-
-
-	#else:
-		#return [x_init, f0, y, g, x_init, f1, L_1_B]
-
-
-
-## Here, slice from initial data
-def astars_update_active(func,xinit,noise,L_1,finit=None,max_it=100,update_per=5,verbose=True):
-    #from active_subspaces.utils.response_surfaces import PolynomialApproximation
-    ''' xinit=initial training data '''
-    
-    dim=xinit.shape[0] #? check
-    #print(dim)
-    xhist_ad=np.copy(xinit)
-    if finit==None:
-        #generate initial data
-        fhist_ad=func(xinit)
-    else:
-        fhist_ad=np.copy(finit)
-    yhist_ad=np.zeros(0)
-    ghist_ad=np.copy(0)
-    x=np.copy(xinit)
-    #get initial hyperparameters
-    mu_star=get_mu_star(noise,L_1,dim)
-    h=get_h(L_1,dim)
-    #initial full space
-    sub=np.eye(dim)
+    #sub=np.eye(self.dim)
     ss=ac.subspaces.Subspaces()
-    for i in range(max_it):
-        if i>dim and i%update_per==0:
-            if verbose:
-                print('Computing Active Subspace after ',i,' steps')
-            trainx=np.hstack((xhist_ad,yhist_ad))
-            trainf=np.vstack((fhist_ad,ghist_ad))
-            if verbose:
-                print('Training Data Size',trainx.shape)
-                print('Training Output Size',trainf.shape)
-            #compute mixed RBF + subspace approximation
-            ss,rbf=train_rbf(trainx.transpose(),trainf,noise=noise)
-        #look for 90% variation
-            our_wts=np.sqrt(ss.eigenvals)
-            total_var=np.sum(our_wts)
-            svar=0
-            adim=0
-            while svar < .9*total_var:
-                svar += our_wts[adim]
-                adim+=1
-            if verbose:
-                print('Subspace Dimension',adim)
-                #print(our_wts)
-            sub=ss.eigenvecs[:,0:adim]
-        ##update ASTARS parameters
-            mu_star=get_mu_star(noise,L_1,adim)
-            h=get_h(L_1,adim)
-    ## take ASTARS STEP
-        [x,f,y,fy,p,q,L1B]=STARS(x,func,mu_star,h,active=sub)
-        xhist_ad=np.hstack((xhist_ad,x))
-        fhist_ad=np.vstack((fhist_ad,f))
-        if yhist_ad.size > 0:
-            yhist_ad=np.hstack((yhist_ad,y))
-            ghist_ad=np.vstack((ghist_ad,fy))
-        else:
-            yhist_ad=np.array(y)
-            ghist_ad=np.array(fy)
-    #L1Bhist=np.vstack((L1Bhist,L1B))
-    return xhist_ad,yhist_ad,fhist_ad,ghist_ad
+    if self.Window is None:
+	    trainx=np.hstack((self.xhist,self.yhist))
+	    trainf=np.vstack((self.fhist,self.ghist))
+    else:
+	    trainx=np.hstack((self.xhist[-self.Window:],self.yhist[-self.Window:]))
+	    trainf=np.vstack((self.fhist[-self.Window:],self.ghist[-self.Window:]))
+    if self.verbose:
+            print('Computing Active Subspace after ',self.iter,' steps')
+	    print('Training Data Size',trainx.shape)
+	    print('Training Output Size',trainf.shape)
+    
+    if self.train_method=None:
+	    #determine appropriate training method (RBF+polynomial)
+	    ss,rbf=train_rbf(trainx.transpose(),trainf,noise=noise)
+    elif self.train_method='LL':
+            #Estimated gradients using local linear models
+	    df = ac.gradients.local_linear_gradients(trainx, trainf) 
+            ss.compute(df=df, nboot=0)
+    elif self.train_method='GQ':
+	    #Use global quadratic surrogate
+	    ss.compute(X=trainx, f=trainf, nboot=0, sstype='QPHD')
+    #look for 90% variation
+    our_wts=np.sqrt(ss.eigenvals)
+    total_var=np.sum(our_wts)
+    svar=0
+    adim=0
+    while svar < .9*total_var:
+	    svar += our_wts[adim]
+	    adim+=1
+    if self.verbose:
+	    print('Subspace Dimension',adim)
+	    #print(our_wts)
+    self.active=ss.eigenvecs[:,0:adim]
+    self.wts=out_wts
+    ##update ASTARS parameters
+    get_mu_star(self)
+    get_h(self)
+
+
