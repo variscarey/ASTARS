@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat May 23 05:50:46 2020
+
+@author: Varis Carey and Jordan Hall
+"""
+
+
 ## ECNoise: (f, x_b, h, M, mult) -> (sigma_hat, xvals, fvals)
 
 ## Inputs:  f: noisy black-box function; 
@@ -110,3 +119,19 @@ def ECNoise(f, x_b, h=0.01, M=7, mult_flag=False):
 		# return print('h is too large. Try 0.01*h next. Default is h=0.01.')
 		sigma_hat = [-1]
 		return sigma_hat
+
+
+
+
+def get_L1(xdata,fdata,var):
+    ''' 
+    computes approximate L1 Lipschitz constant by using 1D polynomial
+    '''
+    
+    import numpy as np
+    
+    weight=var*np.ones(xdata.size)
+    degree=min(xdata.size-1,5)
+    poly=np.polynomial.polynomial.Polynomial.fit(xdata,fdata,degree,w=weight)
+    temp=(poly.deriv(2)).linspace()
+    return np.max(np.absolute(temp[1]))
