@@ -1,18 +1,22 @@
+print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__,__name__,str(__package__)))
+
+
 from .utils import train_rbf,get_L1,ECNoise
 
 import numpy as np
 import active_subspaces as ac
 
 
-class ASTARS_sim:
+class Stars_sim:
     
-    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100): #constructor, includes function f to optimize
-#constructor input processing
+    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100): 
+
+        #constructor input processing
         self.f = f
         self.L1 =L1
         self.x = x_start
         self.var = var #variance of additive noise
-        self.mult =mult
+        self.mult = mult
         self.verbose = verbose
         self.maxit = maxit
         
@@ -21,16 +25,18 @@ class ASTARS_sim:
         self.active = None
         self.iter = 0
         self.Window = None  #integer, window size for surrogate construction
-
+        self.debug = False
+        
+        #process initial input vector
         if self.x.ndim == 1:
             self.x.reshape(-1,1)
         self.dim = self.x.shape[0] 
         
         #preallocate history arrays for efficiency
-        self.xhist = np.zeros((maxit+1,self.dim))
+        self.xhist = np.zeros((self.dim,maxit+1))
         self.fhist = np.zeros((maxit+1,1))
         self.ghist = np.zeros((maxit,1))
-        self.yhist = np.zeros((maxit,self.dim))
+        self.yhist = np.zeros((self.dim,maxit))
 
         if self.var is None:
             h=0.01
@@ -102,21 +108,23 @@ class ASTARS_sim:
         # Form finite-difference "gradient oracle"
         s = ((g - f0)/self.mu_star)*u 
         # Take descent step in direction of -s smooth by h to get next iterate, x_1
-        self.x -= -(self.h)*s
+        self.x -= (self.h)*s
         # stack here
         self.iter+=1
-        self.xhist[:,iter]=self.x
-        self.fhist[iter]=self.f(self.x) #compute new f value
-        self.yhist[:,iter]=self.y
-        self.ghist[iter]=g
+        self.xhist[:,self.iter]=self.x.flatten()
+        self.fhist[self.iter]=self.f(self.x) #compute new f value
+        self.yhist[:,self.iter-1]=y.flatten()
+        self.ghist[self.iter-1]=g
     
         if self.update_L1 is True and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
             #not implemented for multiplicative noise yet 
             #1Dx data
             x1d=np.array([0,np.linalg.norm(u),np.linalg.norm(s)])
-            L1=get_L1(x1d,[f0,g,self.fhist[iter]],self.var)
+            L1=get_L1(x1d,[f0,g,self.fhist[self.iter]],self.var)
             self.L1=np.max(L1,self.L1)
+        if self.debug:
+            print(self.iter,self.fhist[self.iter])
             
 
     def compute_active(self):
