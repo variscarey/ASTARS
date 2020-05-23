@@ -16,16 +16,15 @@ setup(name='ASTARS',
         'Topic :: Scientific/Engineering :: Mathematics'
       ],
       keywords='dimension reduction mathematics active subspaces uncertainty quantification optmization',
-      url='https://github.com/variscarey/ASTARS,
+      url='https://github.com/variscarey/ASTARS',
       author='Varis Carey and Jordan Hall',
       author_email='variscarey@googlemail.com',
       license='MIT',
-      packages=['active_subspaces', 'active_subspaces.utils'],
+      packages=['astars', 'astars.utils'],
       install_requires=[
           'numpy',
           'scipy >= 0.15.0',
-          'matplotlib',
-          'active_subspaces_py3'
+          'matplotlib'
       ],
       #test_suite='nose.collector',
       #tests_require=['nose'],
