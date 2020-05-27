@@ -1,7 +1,8 @@
 print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__,__name__,str(__package__)))
 
 
-from .utils import train_rbf,get_L1,ECNoise
+from .utils.stars_param import get_L1,ECNoise
+from .utils.surrogates import train_rbf
 
 import numpy as np
 import active_subspaces as ac
@@ -9,7 +10,7 @@ import active_subspaces as ac
 
 class Stars_sim:
     
-    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100): 
+    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100,train_method=None): 
 
         #constructor input processing
         self.f = f
@@ -19,6 +20,8 @@ class Stars_sim:
         self.mult = mult
         self.verbose = verbose
         self.maxit = maxit
+        self.STARS_only = False
+        self.train_method = train_method
         
         #default internal settings, can be modified.
         self.update_L1 = False
@@ -26,11 +29,12 @@ class Stars_sim:
         self.iter = 0
         self.Window = None  #integer, window size for surrogate construction
         self.debug = False
+        self.adapt = 5  #adapt active subspace every 5 steps.
         
         #process initial input vector
-        if self.x.ndim == 1:
-            self.x.reshape(-1,1)
-        self.dim = self.x.shape[0] 
+        if self.x.ndim > 1:
+            self.x=self.x.flatten()
+        self.dim = self.x.size
         
         #preallocate history arrays for efficiency
         self.xhist = np.zeros((self.dim,maxit+1))
@@ -43,9 +47,12 @@ class Stars_sim:
             while self.var is None:
                 if self.verbose:
                     print('Calling ECNoise to determine noise variance,h=',h)
-                temp=ECNoise(self.f,self.init,h=h,mult=self.mult)
+                temp=ECNoise(self.f,self.x,h=h,mult_flag=self.mult)
+                
                 if temp[0] > 0: #ECNoise success
                     self.var=temp[0]
+                    if verbose:
+                        print('Approx. variance of noise=',self.var)
                     self.x_noise=temp[1]
                     self.f_noise=temp[2]
                 elif temp[0] == -1:
@@ -56,9 +63,12 @@ class Stars_sim:
         if self.L1 is None:
             if self.verbose is True:
                 print('Determining initial L1 from ECNoise Data')
-            #convert/project to 1D
-            x_1d=self.x_noise@self.x/np.dot(self.x,self.x)
+  
+            x_1d=h*np.arange(0,self.x_noise.shape[1])
             self.L1=get_L1(x_1d,self.f_noise,self.var)
+            
+            if self.verbose is True:
+                print('Approximate value of L1=',self.L1)
             
     def get_mu_star(self):
         N = self.dim
@@ -80,6 +90,12 @@ class Stars_sim:
         '''
     
         f0=self.fhist[self.iter]
+
+        if not self.STARS_only:
+            if not self.active or (self.adapt > 0  and self.iter%self.adapt == 0):
+                if (2*self.iter + self.x_noise.shape[1])> self.dim + 1:
+                    self.compute_active()   
+
     
 
         # Compute mult_mu_star_k (if needed)
@@ -90,11 +106,11 @@ class Stars_sim:
         # Draw a random vector of same size as x_init
     
         if self.active is None:
-            u = np.random.normal(0,1,(self.dim,1))
+            u = np.random.normal(0,1,(self.dim))
         else: 
             act_dim=self.active.shape[1]
             if self.wts is None:
-                lam = np.random.normal(0,1,(act_dim,1))
+                lam = np.random.normal(0,1,(act_dim))
             else:
                 lam = np.zeros((act_dim,1))
                 for i in range(act_dim):
@@ -111,9 +127,9 @@ class Stars_sim:
         self.x -= (self.h)*s
         # stack here
         self.iter+=1
-        self.xhist[:,self.iter]=self.x.flatten()
+        self.xhist[:,self.iter]=self.x
         self.fhist[self.iter]=self.f(self.x) #compute new f value
-        self.yhist[:,self.iter-1]=y.flatten()
+        self.yhist[:,self.iter-1]=y
         self.ghist[self.iter-1]=g
     
         if self.update_L1 is True and self.mult is False:
