@@ -1,7 +1,9 @@
 def train_rbf(xtrain,ftrain,noise=None,cutoff=.9):
-    from active_subspaces.utils.response_surfaces import PolynomialApproximation
+    import numpy as np
+    
+#   from active_subspaces.utils.response_surfaces import PolynomialApproximation
     from active_subspaces.utils.response_surfaces import RadialBasisApproximation 
-    from active_subspaces.utils.response_surfaces import RadialBasisApproximation 
+    import active_subspaces as ac
     
     ss=ac.subspaces.Subspaces()
     dim=xtrain.shape[1]
