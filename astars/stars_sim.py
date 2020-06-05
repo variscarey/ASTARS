@@ -127,7 +127,7 @@ class Stars_sim:
                 for i in range(act_dim):
                     lam[i]=np.random.normal(0,self.wts[0][0]/self.wts[i][0])        
             u = self.active@lam
-            print(u.shape)
+            #print(u.shape)
     
         # Form vector y, which is a random walk away from x_init
         y = self.x + mu_star*u
@@ -201,17 +201,17 @@ class Stars_sim:
             dummy,df = gquad.predict(train_x, compgrad=True)
             ss.compute(df=df, nboot=0)
         #look for 90% variation
-        out_wts=np.sqrt(ss.eigenvals)
-        total_var=np.sum(out_wts)
+        #out_wts=np.sqrt(ss.eigenvals)
+        total_var=np.sum(ss.eigenvals)
         svar=0
         adim=0
         while svar < .9*total_var:
-            svar += out_wts[adim]
+            svar += ss.eigenvals[adim]
             adim+=1
         if self.verbose:
             print('Subspace Dimension',adim)
-            print(out_wts)
-            #print('Subspace',ss.eigenvecs[:,0:adim])
+            print(ss.eigenvals[0:adim])
+            print('Subspace',ss.eigenvecs[:,0:adim])
         if self.update_L1 is True and self.train_method != 'LL':
             if self.train_method == 'GQ':
                 d2f = gquad.comp_hessian(train_x)
@@ -230,7 +230,7 @@ class Stars_sim:
             #if self.train_method = None and rbf.N >= 2:
                 
         self.active=ss.eigenvecs[:,0:adim]
-        self.wts=out_wts
+        self.wts=ss.eigenvals
         ##update ASTARS parameters
         self.get_mu_star()
         self.get_h()
