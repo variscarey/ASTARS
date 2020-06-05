@@ -141,7 +141,7 @@ def ECNoise(f,x_b,h=1E-2,M=3,mult_flag=False):
     f2d = fvals[0:-2]+fvals[2:]-2*fvals[1:-1]
     print('difference quotients',f2d)
     if np.max(np.abs(f2d)) > 100*noise_array[0]:
-        L1=np.max(f2d)/h**2
+        L1 = np.max(np.abs(f2d))/h**2
     else:
         print('Warning: h may be too small for accurate L1')
         f2d=np.abs(fvals[0]+fvals[-1]-2*fvals[M])
