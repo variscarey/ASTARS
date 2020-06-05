@@ -1,2 +1,2 @@
 ''' This is the init file.'''
-from . import stars_sim
+#from astars.stars_sim import Stars_sim

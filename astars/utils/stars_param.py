@@ -158,6 +158,8 @@ def get_L1(xdata,fdata,var,degree = 3):
     '''
     
     import numpy as np
+    import matplotlib.pyplot as plt
+    
     from .reg_ls import ls_l2reg
     
     #scale data on (0,1)
@@ -166,11 +168,18 @@ def get_L1(xdata,fdata,var,degree = 3):
     #vandermone matrix with normalized coefficeints
     X=np.vander(xdata*map,N=degree+1,increasing=True)
     coeff=ls_l2reg(X,var,fdata)
+    print('fit coefficients on [0,1]',coeff)
   
     poly=np.polynomial.Polynomial( coeff,domain=[xdata.min(),xdata.max()],window=[0,1])
     
+    plt.plot(poly.linspace()[0],poly.linspace()[1])
+    plt.scatter(xdata,fdata)
+    plt.show()
+    
     #TODO: put in non-grid search solve for L1.
     temp=(poly.deriv(2)).linspace()
+    plt.plot(temp[0],temp[1])
+    plt.show()
    
     return np.max(np.absolute(temp[1]))
 

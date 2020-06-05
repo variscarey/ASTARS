@@ -12,7 +12,7 @@ def train_rbf(xtrain,ftrain,noise=None,cutoff=.9):
         #print('Quadratic Monomials')
     else:
         rb_approx=RadialBasisApproximation(N=1)
-    if noise==None:
+    if noise is None:
         rb_approx.train(xtrain,ftrain) 
     else:
         rb_approx.train(xtrain,ftrain,v=noise*np.ones(ftrain.shape))
