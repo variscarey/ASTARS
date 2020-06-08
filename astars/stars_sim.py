@@ -93,7 +93,7 @@ class Stars_sim:
             N = self.active.shape[1]
         self.h=1/(4*L1*(N+4))
 
-    def STARS_step(self):
+    def step(self):
         '''    
         Takes 1 step of STARS or ASTARS depending on current object settings
         '''
@@ -127,6 +127,8 @@ class Stars_sim:
                 for i in range(act_dim):
                     lam[i]=np.random.normal(0,self.wts[0][0]/self.wts[i][0])        
             u = self.active@lam
+            if self.debug is True:
+                print('Iteration',self.iter,'Oracle step=',u,)
             #print(u.shape)
     
         # Form vector y, which is a random walk away from x_init
@@ -195,20 +197,26 @@ class Stars_sim:
             ss.compute(df=df, nboot=0)
         elif self.train_method == 'GQ':
             #use global quadratic surrogate
+            #use training method from AS, should give exact integral?
+            #TODO add ridge regression penalty for known variable noise to 
+            #prevent overfitting
+            
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
             gquad.train(train_x, train_f)
             #print(gquad.poly_weights)
-            dummy,df = gquad.predict(train_x, compgrad=True)
+            mc_samples=2*(np.random.rand(100**2,self.dim))-1
+            #dummy,df = gquad.predict(train_x, compgrad=True)
+            dummy,df = gquad.predict(mc_samples, compgrad=True)
             ss.compute(df=df, nboot=0)
         #look for 90% variation
         #out_wts=np.sqrt(ss.eigenvals)
         total_var=np.sum(ss.eigenvals)
         svar=0
         adim=0
-        while svar < .9*total_var:
+        while svar < .95*total_var:
             svar += ss.eigenvals[adim]
             adim+=1
-        if self.verbose:
+        if self.verbose or self.debug:
             print('Subspace Dimension',adim)
             print(ss.eigenvals[0:adim])
             print('Subspace',ss.eigenvecs[:,0:adim])
