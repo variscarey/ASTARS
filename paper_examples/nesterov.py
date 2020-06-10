@@ -1,29 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun  8 15:06:33 2020
+Created on 6/10/2020
 
-@author: cmg
+@author: Jordan Hall and Varis Carey
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-
-#import active_subspaces as as   
+import matplotlib.pyplot as plt  
 from astars.stars_sim import Stars_sim
 
-def toy_f(x):
-    return x[0]**2 + 1E-2*np.random.randn(1)
+def nesterov_f(x,var=1E-2):
+    dim=x.shape[0]
+    temp=np.arange(dim,dtype=float)
+    weights=2**((-1)**temp*temp)
+    y=np.copy(x)
+    y*=y
+    ans=np.dot(weights,y) +var*np.random.randn(1)
+    #print(ans.shape)
+    return ans
     
 
-init_pt=5*np.random.randn(20,1)
+init_pt=5*np.random.randn(10,1)
 ntrials = 2
 maxit = 200
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_f, init_pt, L1 = 2**11, var = 1E-4, verbose = False, maxit = maxit)
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -38,7 +43,7 @@ f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_f, init_pt, L1 = 2**11, var = 1E-4, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
