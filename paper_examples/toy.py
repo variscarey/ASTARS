@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 #import active_subspaces as as   
 from astars.stars_sim import Stars_sim
 
-def toy_f(x):
-    return x[0]**2 + 1E-2*np.random.randn(1)
+def toy_f(x,var=1E-2):
+    return x[0]**2 + var*np.random.randn(1)
     
 
 init_pt=5*np.random.randn(20,1)
