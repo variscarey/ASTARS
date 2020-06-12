@@ -16,7 +16,12 @@ def wing(xx,var=1E-2):
     #each row of xx should be [Sw. Wfw, A, Lambda, q, lambda, tc, Nz, Wdg, Wp] in the (normalized) input space
     #removing ability for multiple evaluations and now just accepting a single vector input and returning a single value as output
     
-    x = xx.copy()
+    x1 = xx.copy()
+    
+    ub = np.array([150, 220, 6, -10, 16, .5, .08, 2.5, 1700, .025]).reshape((10, 1))
+    lb = np.array([200, 300, 10, 10, 45, 1, .18, 6, 2500, .08]).reshape((10, 1))
+    
+    x = lb + (ub - lb)/2.*(x1 + np.ones((10,1)))
     
     Sw = x[0]; Wfw = x[1]; A = x[2]; L = x[3]*np.pi/180.; q = x[4]
     l = x[5]; tc = x[6]; Nz = x[7]; Wdg = x[8]; Wp = x[9]
