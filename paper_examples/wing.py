@@ -49,8 +49,32 @@ def wing_grad(xx):
     return np.hstack((dfdSw, dfdWfw, dfdA, dfdL, dfdq, dfdl, dfdtc, dfdNz, dfdWdg, dfdWp))
     
 # Do STARS and ASTARS  
-init_pt=5*np.random.randn(10,1)
-ntrials = 2
+init_pt=np.random.rand(10)
+init_pt[0]*=50
+init_pt[0]+=150
+init_pt[1]*=80
+init_pt[1]+=220
+init_pt[2]*=4
+init_pt[2]+=6
+init_pt[3]*=20
+init_pt[4]*=29
+init_pt[5]*=.5
+init_pt[6]*=.1
+init_pt[7]*=3.5
+init_pt[8]*=800
+init_pt[9]*=.055
+init_pt[3]-=10
+init_pt[4]+=16
+init_pt[5]+=.5
+init_pt[6]+=.08
+init_pt[7]+=2.5
+init_pt[8]+=1700
+init_pt[9]+=.025
+
+print(init_pt)
+
+
+ntrials = 20
 maxit = 200
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
@@ -71,19 +95,19 @@ f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(wing, init_pt, L1 = 2, var = 1E-4, verbose = False, maxit = maxit)
+    test2 = Stars_sim(wing, init_pt, L1 = 2, var = 1E-4, verbose = False, maxit = maxit)
     #test.STARS_only = True
-    test.get_mu_star()
-    test.get_h()
+    test2.get_mu_star()
+    test2.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)
-    test.train_method = 'GQ'
-    test.adapt = 10 # Sets number of sub-cylcing steps
+    test2.train_method = 'GQ'
+    test2.adapt = 10 # Sets number of sub-cylcing steps
     
     # do 100 steps
-    while test.iter < test.maxit:
-        test.step()    
-    f2_avr += test.fhist
-    print('trial',trial,' minval',test.fhist[-1])
+    while test2.iter < test.maxit:
+        test2.step()    
+    f2_avr += test2.fhist
+    print('trial',trial,' minval',test2.fhist[-1])
 
 f_avr /= ntrials
 f2_avr /= ntrials
