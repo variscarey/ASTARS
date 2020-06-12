@@ -18,10 +18,11 @@ def wing(xx,var=1E-2):
     
     x1 = xx.copy()
     
-    ub = np.array([150, 220, 6, -10, 16, .5, .08, 2.5, 1700, .025]).reshape((10, 1))
-    lb = np.array([200, 300, 10, 10, 45, 1, .18, 6, 2500, .08]).reshape((10, 1))
+    ub = np.array([150, 220, 6, -10, 16, .5, .08, 2.5, 1700, .025])
+    lb = np.array([200, 300, 10, 10, 45, 1, .18, 6, 2500, .08])
     
-    x = lb + (ub - lb)/2.*(x1 + np.ones((10,1)))
+    x = lb + (ub - lb)/2.*(x1 + 1)
+    #print('mapped x',x)
     
     Sw = x[0]; Wfw = x[1]; A = x[2]; L = x[3]*np.pi/180.; q = x[4]
     l = x[5]; tc = x[6]; Nz = x[7]; Wdg = x[8]; Wp = x[9]
@@ -54,38 +55,38 @@ def wing_grad(xx):
     return np.hstack((dfdSw, dfdWfw, dfdA, dfdL, dfdq, dfdl, dfdtc, dfdNz, dfdWdg, dfdWp))
     
 # Do STARS and ASTARS  
-init_pt=np.random.rand(10)
-init_pt[0]*=50
-init_pt[0]+=150
-init_pt[1]*=80
-init_pt[1]+=220
-init_pt[2]*=4
-init_pt[2]+=6
-init_pt[3]*=20
-init_pt[4]*=29
-init_pt[5]*=.5
-init_pt[6]*=.1
-init_pt[7]*=3.5
-init_pt[8]*=800
-init_pt[9]*=.055
-init_pt[3]-=10
-init_pt[4]+=16
-init_pt[5]+=.5
-init_pt[6]+=.08
-init_pt[7]+=2.5
-init_pt[8]+=1700
-init_pt[9]+=.025
+init_pt=2*np.random.rand(10)-1
+#init_pt[0]*=50
+#init_pt[0]+=150
+#init_pt[1]*=80
+#init_pt[1]+=220
+#init_pt[2]*=4
+#init_pt[2]+=6
+#init_pt[3]*=20
+#init_pt[4]*=29
+#init_pt[5]*=.5
+#init_pt[6]*=.1
+#init_pt[7]*=3.5
+#init_pt[8]*=800
+#init_pt[9]*=.055
+#init_pt[3]-=10
+#init_pt[4]+=16
+#init_pt[5]+=.5
+#init_pt[6]+=.08
+#init_pt[7]+=2.5
+#init_pt[8]+=1700
+#init_pt[9]+=.025
 
 print(init_pt)
 
 
 ntrials = 2
-maxit = 200
+maxit = 20
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(wing, init_pt, L1 = 2, var = 1E-4, verbose = True, maxit = maxit)
+    test = Stars_sim(wing, init_pt, L1 = 200, var = 1E-4, verbose = True, maxit = maxit)
     test.STARS_only = True
     test.debug = True
     test.get_mu_star()
@@ -93,8 +94,10 @@ for trial in range(ntrials):
     # do 100 steps
     while test.iter < test.maxit:
         test.step()
-        if np.isnan(test.x).any:
-            raise SystemExit('nan in current iterate')
+        #if np.isnan(test.x).any:
+        #    print(test.xhist[:,0:test.iter+1],test.yhist[:,0:test.iter+1],test.fhist[0:test.iter+1],test.ghist[0:test.iter+1])
+        #    print(test.x)
+        #    raise SystemExit('nan in current iterate')
     
     #update average of f
     f_avr += test.fhist  
@@ -103,10 +106,11 @@ f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test2 = Stars_sim(wing, init_pt, L1 = 2, var = 1E-4, verbose = False, maxit = maxit)
+    test2 = Stars_sim(wing, init_pt, L1 = 200, var = 1E-4, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test2.get_mu_star()
     test2.get_h()
+    test2.debug = True
     # adapt every 10 timesteps using quadratic(after inital burn)
     test2.train_method = 'GQ'
     test2.adapt = 10 # Sets number of sub-cylcing steps
