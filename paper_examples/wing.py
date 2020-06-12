@@ -74,19 +74,22 @@ init_pt[9]+=.025
 print(init_pt)
 
 
-ntrials = 20
+ntrials = 2
 maxit = 200
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(wing, init_pt, L1 = 2, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(wing, init_pt, L1 = 2, var = 1E-4, verbose = True, maxit = maxit)
     test.STARS_only = True
+    test.debug = True
     test.get_mu_star()
     test.get_h()
     # do 100 steps
     while test.iter < test.maxit:
         test.step()
+        if np.isnan(test.x).any:
+            raise SystemExit('nan in current iterate')
     
     #update average of f
     f_avr += test.fhist  
@@ -102,6 +105,7 @@ for trial in range(ntrials):
     # adapt every 10 timesteps using quadratic(after inital burn)
     test2.train_method = 'GQ'
     test2.adapt = 10 # Sets number of sub-cylcing steps
+    
     
     # do 100 steps
     while test2.iter < test.maxit:
