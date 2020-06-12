@@ -15,7 +15,7 @@ class Stars_sim:
         #constructor input processing
         self.f = f
         self.L1 =L1
-        self.x = x_start
+        self.x = np.copy(x_start)
         self.var = var #variance of additive noise
         self.mult = mult
         self.verbose = verbose
@@ -155,6 +155,8 @@ class Stars_sim:
             #self.L1=np.max(L1,self.L1)
         if self.debug:
             print(self.iter,self.fhist[self.iter])
+            with (np.printoptions(precision = 4, suppress = True)):
+                print(self.x)
             
 
     def compute_active(self):
