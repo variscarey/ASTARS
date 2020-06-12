@@ -200,15 +200,19 @@ class Stars_sim:
             #use training method from AS, should give exact integral?
             #TODO add ridge regression penalty for known variable noise to 
             #prevent overfitting
-            
+            #ss.train(X=train_x,f=train_f,sstype='QPHD')
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
             gquad.train(train_x, train_f)
-            #print(gquad.poly_weights)
-            mc_samples=2*(np.random.rand(100**2,self.dim))-1
-            #dummy,df = gquad.predict(train_x, compgrad=True)
-            dummy,df = gquad.predict(mc_samples, compgrad=True)
-            ss.compute(df=df, nboot=0)
-        #look for 90% variation
+            # get regression coefficients
+            b, A = gquad.g, gquad.H
+
+            # compute variation of gradient of f, analytically
+            # normalization assumes [-1,1] inputs from above
+            
+            C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
+            ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
+
+        #look for 95% variation
         #out_wts=np.sqrt(ss.eigenvals)
         total_var=np.sum(ss.eigenvals)
         svar=0
