@@ -15,7 +15,7 @@ class Stars_sim:
         #constructor input processing
         self.f = f
         self.L1 =L1
-        self.x = x_start
+        self.x = np.copy(x_start)
         self.var = var #variance of additive noise
         self.mult = mult
         self.verbose = verbose
