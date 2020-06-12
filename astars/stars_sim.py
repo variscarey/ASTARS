@@ -155,6 +155,8 @@ class Stars_sim:
             #self.L1=np.max(L1,self.L1)
         if self.debug:
             print(self.iter,self.fhist[self.iter])
+            with (np.printoptions(precision = 4, suppress = True)):
+                print(self.x)
             
 
     def compute_active(self):
