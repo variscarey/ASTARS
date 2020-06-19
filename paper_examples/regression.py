@@ -34,14 +34,17 @@ def rms_loss(weights,pred,data):
     RMS = np.sum(lin_f(pred,weights)-data)**2
     return RMS
 
-train = 5
 dim = 10
+train = 5
 true_pts = np.random.normal(scale = 4.0, size = (train,dim))
 
-data = np.sum(true_pts,axis = 1)
+#data = np.sum(true_pts,axis = 1)
+data = true_pts[:,0]
 print('true points',true_pts)
 print('true data',data)
-print('noisy map',lin_f(true_pts,np.ones(dim)))
+map = np.zeros(dim)
+map[0] = 1
+print('noisy map',lin_f(true_pts,map))
 
 print('RMS error',rms_loss(np.ones(dim),true_pts,data))
 
@@ -63,7 +66,7 @@ def stars_wrapper(iterate,dim=10):
 #stars setup
 maxit = 500
 init_pt = np.hstack((init_weights,noisy_pred.flatten()))    
-ntrials = 10
+ntrials = 1
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
@@ -83,23 +86,29 @@ f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(stars_wrapper, init_pt, L1 = 400.0, var = 1E-4, verbose = True, maxit = maxit)
+    test = Stars_sim(stars_wrapper, init_pt, L1 = 400.0, var = 1E-4, verbose =False, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)
-    test.train_method = 'GQ'
-    test.adapt = 10 # Sets number of sub-cylcing steps
+    # test.train_method = 'GQ'
+    test.adapt = 20 # Sets number of sub-cylcing steps
     
     # do 100 steps
     while test.iter < test.maxit:
-        test.step()    
+        test.step()  
+        if test.active is not None and test.iter % 10 == 0:
+            print('Iteration', test.iter)
+            print('Active dimension',test.active.shape[1])
+            print('Active weights',test.wts[0:test.active.shape[1]+1])
     f2_avr += test.fhist
     print('trial',trial,' minval',test.fhist[-1])
+    print(test.x[0:10])
 
 f_avr /= ntrials
 f2_avr /= ntrials
- 
+
+
 plt.semilogy(f_avr,label='Stars')
 plt.semilogy(f2_avr, label='Astars')
 plt.legend()
