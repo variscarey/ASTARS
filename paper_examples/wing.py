@@ -28,6 +28,9 @@ def wing(xx,var=1E-2):
     l = x[5]; tc = x[6]; Nz = x[7]; Wdg = x[8]; Wp = x[9]
     
     return .036*Sw**.758*Wfw**.0035*A**.6*np.cos(L)**-.9*q**.006*l**.04*100**-.3*tc**-.3*Nz**.49*Wdg**.49 + Sw*Wp + var*np.random.randn(1)
+
+def wing_barrier(xx, mu=1E-1):
+    return wing(xx) - mu * np.sum(np.log(-xx+1)+np.log(1+xx))
     
 def wing_grad(xx):
     #each row of xx should be [Sw. Wfw, A, Lambda, q, lambda, tc, Nz, Wdg, Wp] in the normalized input space
@@ -81,12 +84,13 @@ print(init_pt)
 
 
 ntrials = 2
-maxit = 20
+maxit = 200
+
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(wing, init_pt, L1 = 200, var = 1E-4, verbose = True, maxit = maxit)
+    test = Stars_sim(wing_barrier, init_pt, L1 = 200, var = 1E-4, verbose = True, maxit = maxit)
     test.STARS_only = True
     test.debug = True
     test.get_mu_star()
@@ -106,7 +110,7 @@ f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test2 = Stars_sim(wing, init_pt, L1 = 200, var = 1E-4, verbose = False, maxit = maxit)
+    test2 = Stars_sim(wing_barrier, init_pt, L1 = 200, var = 1E-4, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test2.get_mu_star()
     test2.get_h()
