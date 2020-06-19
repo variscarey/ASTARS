@@ -39,6 +39,15 @@ true_pts = np.random.normal(scale = 4.0, size = (train,dim))
 data = np.sum(true_pts,axis = 1)
 print('true points',true_pts)
 print('true data',data)
-print('noisy map',lin_f(true_pts,np.ones(10)))
+print('noisy map',lin_f(true_pts,np.ones(dim)))
+
+print('RMS error',rms_loss(np.ones(dim),true_pts,data))
+
+noisy_pred = true_pts + np.random.normal(scale = 1E-2, size = true_pts.shape)
+
+init_weights = np.random.normal(size=dim)
+
+print('initial weights',init_weights)
+
 
     
