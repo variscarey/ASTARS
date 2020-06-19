@@ -81,7 +81,8 @@ for trial in range(ntrials):
     
     #update average of f
     f_avr += test.fhist  
-    
+
+print('STARS min',test.x[0:10])
 f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
@@ -92,7 +93,7 @@ for trial in range(ntrials):
     test.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)
     # test.train_method = 'GQ'
-    test.adapt = 20 # Sets number of sub-cylcing steps
+    test.adapt = 100 # Sets number of sub-cylcing steps
     
     # do 100 steps
     while test.iter < test.maxit:
@@ -101,6 +102,7 @@ for trial in range(ntrials):
             print('Iteration', test.iter)
             print('Active dimension',test.active.shape[1])
             print('Active weights',test.wts[0:test.active.shape[1]+1])
+            print('True active variable comps.',test.active[0:-1:10])
     f2_avr += test.fhist
     print('trial',trial,' minval',test.fhist[-1])
     print(test.x[0:10])
