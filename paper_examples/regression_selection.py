@@ -36,7 +36,7 @@ def rms_loss(weights,pred,data):
 
 num_features = 6
 num_train = 20
-true_pts = np.random.normal(scale = 4.0, size = num_train)
+true_pts = np.random.uniform(low=-1.0,high=1.0, size = num_train)
 #build polynomial features
 train_feat = np.vander(true_pts,N=num_features+1,increasing=True)[:,1:]
 
@@ -57,7 +57,7 @@ def stars_wrapper(iterate,dim=10):
 #    return rms_loss(weights,pred,data)
 
 #stars setup
-maxit = 500
+maxit = 1000
 init_pt = np.copy(init_weights)    
 ntrials = 1
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
@@ -98,7 +98,7 @@ for trial in range(ntrials):
         if test.active is not None and test.iter % 10 == 0:
             print('Iteration', test.iter)
             print('Active dimension',test.active.shape[1])
-            #print('Active weights',test.wts[0:test.active.shape[1]+1])
+            print('Active weights',test.wts)
             print('True active variable comps.',test.active)
     f2_avr += test.fhist
     print('trial',trial,' minval',test.fhist[-1])
