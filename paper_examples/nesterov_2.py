@@ -19,12 +19,12 @@ def nesterov_2_f(x,var=1E-2):
     return ans
    
 
-init_pt=np.zeros(100)
+init_pt=np.zeros(40)
 
 print(nesterov_2_f(init_pt))
 
-ntrials = 2
-maxit = 200
+ntrials = 25
+maxit = 1200
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
@@ -50,7 +50,7 @@ for trial in range(ntrials):
     test.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)
     test.train_method = 'GQ'
-    test.adapt = 10 # Sets number of sub-cylcing steps
+    test.adapt = 40 # Sets number of sub-cylcing steps
     
     # do 100 steps
     while test.iter < test.maxit:
@@ -61,7 +61,7 @@ for trial in range(ntrials):
 f_avr /= ntrials
 f2_avr /= ntrials
  
-plt.semilogy(f_avr,label='Stars')
-plt.semilogy(f2_avr, label='Astars')
+plt.semilogy(np.absolute(-.5-f_avr),label='Stars')
+plt.semilogy(np.absolute(-.5-f2_avr), label='Astars')
 plt.legend()
 plt.show()
