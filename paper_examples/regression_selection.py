@@ -45,7 +45,10 @@ data = noisy_cubic(true_pts)
 #print('true points',true_pts)
 print('true data',data)
 #initialize model weights
-init_weights = np.random.uniform(low=-1.0,high=1.0,size=num_features)
+#init_weights = np.random.uniform(low=-1.0,high=1.0,size=num_features)
+init_weights = np.zeros(num_features)
+init_weights[0]=-6.0
+init_weights[2]=1
 
 print('initial weights',init_weights)
 print('initial RMS loss',rms_loss(init_weights,train_feat,data))
@@ -57,7 +60,7 @@ def stars_wrapper(iterate,dim=10):
 #    return rms_loss(weights,pred,data)
 
 #stars setup
-maxit = 1000
+maxit = 100
 init_pt = np.copy(init_weights)    
 ntrials = 1
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
