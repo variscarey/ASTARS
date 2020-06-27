@@ -10,21 +10,20 @@ import numpy as np
 import matplotlib.pyplot as plt  
 from astars.stars_sim import Stars_sim
 
-def nesterov_2_f(x,var=1E-2):
-    ans_temp = 0.5*(x[0]**2+x[9]**2) -x[0]
-    my_s = 0
-    for i in range(1,8):
-        my_s = np.copy(my_s)+0.5*(x[i+1]-x[i])**2
-    ans = ans_temp + my_s + var*np.random.randn(1)
+def nesterov_2_f(x,sig=1E-2):
+    ans = 0.5*(x[0]**2+x[9]**2) -x[0]
+    for i in range(9):
+        ans += 0.5*(x[i]-x[i+1])**2
+    ans += sig*np.random.randn(1)
     return ans
    
 
-init_pt=np.zeros(40)
+init_pt=np.zeros(100)
 
 print(nesterov_2_f(init_pt))
 
-ntrials = 25
-maxit = 1200
+ntrials = 10
+maxit = 8000
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
@@ -36,6 +35,8 @@ for trial in range(ntrials):
     # do 100 steps
     while test.iter < test.maxit:
         test.step()
+        if test.iter % 100 == 0:
+            print('iter',test.iter,test.fhist[test.iter])
     
     #update average of f
     f_avr += test.fhist  
@@ -50,18 +51,22 @@ for trial in range(ntrials):
     test.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)
     test.train_method = 'GQ'
-    test.adapt = 40 # Sets number of sub-cylcing steps
+    test.adapt = 250 # Sets number of sub-cylcing steps
     
     # do 100 steps
     while test.iter < test.maxit:
         test.step()    
+        if test.iter % 100 == 0:
+            print('iter',test.iter,test.fhist[test.iter])
     f2_avr += test.fhist
     print('trial',trial,' minval',test.fhist[-1])
 
 f_avr /= ntrials
 f2_avr /= ntrials
+
+fstar = .5*(-1.0 +  1.0 / 11.0)
  
-plt.semilogy(np.absolute(-.5-f_avr),label='Stars')
-plt.semilogy(np.absolute(-.5-f2_avr), label='Astars')
+plt.semilogy(np.absolute(fstar-f_avr),label='Stars')
+plt.semilogy(np.absolute(fstar-f2_avr), label='Astars')
 plt.legend()
 plt.show()
