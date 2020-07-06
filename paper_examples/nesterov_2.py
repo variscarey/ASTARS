@@ -22,8 +22,8 @@ init_pt=np.zeros(100)
 
 print(nesterov_2_f(init_pt))
 
-ntrials = 10
-maxit = 8000
+ntrials = 2
+maxit = 16000
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
@@ -48,10 +48,10 @@ for trial in range(ntrials):
     test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-4, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
-    test.get_h()
+    test.get_h() 
     # adapt every 10 timesteps using quadratic(after inital burn)
     test.train_method = 'GQ'
-    test.adapt = 250 # Sets number of sub-cylcing steps
+    test.adapt = 500 #ts number of sub-cylcing steps
     
     # do 100 steps
     while test.iter < test.maxit:
