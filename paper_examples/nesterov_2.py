@@ -11,12 +11,11 @@ import matplotlib.pyplot as plt
 from astars.stars_sim import Stars_sim
 import timeit
 
-def nesterov_2_f(x,var=1E-2):
-    ans_temp = 0.5*(x[0]**2+x[9]**2) -x[0]
-    my_s = 0
-    for i in range(1,9):
-        my_s = np.copy(my_s)+0.5*(x[i]-x[i+1])**2
-    ans = ans_temp + my_s + var*np.random.randn(1)
+def nesterov_2_f(x,sig=1E-2):
+    ans = 0.5*(x[0]**2+x[9]**2) -x[0]
+    for i in range(9):
+        ans += 0.5*(x[i]-x[i+1])**2
+    ans += sig*np.random.randn(1)
     return ans
    
 adim =10
@@ -75,8 +74,10 @@ print('the time of this experiment was:    ', time)
 
 f_avr /= ntrials
 f2_avr /= ntrials
+
+fstar = .5*(-1.0 + 1.0 / (adim+1))
  
-plt.semilogy(np.absolute(-0.5*(1-1/(adim+1))-f_avr),label='Stars')
-plt.semilogy(np.absolute(-0.5*(1-1/(adim+1))-f2_avr), label='Astars')
+plt.semilogy(np.absolute(fstar-f_avr),label='Stars')
+plt.semilogy(np.absolute(fstar-f2_avr), label='Astars')
 plt.legend()
 plt.show()
