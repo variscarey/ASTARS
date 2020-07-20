@@ -11,22 +11,22 @@ import matplotlib.pyplot as plt
 from astars.stars_sim import Stars_sim
 import timeit
 
-def nesterov_2_f(x,sig=1E-2):
-    ans = 0.5*(x[0]**2+x[9]**2) -x[0]
-    for i in range(9):
-        ans += 0.5*(x[i]-x[i+1])**2
+adim = 10
+dim = 50
+
+def nesterov_2_f(x,sig=1E-3):
+    ans = 0.5*(x[0]**2 + x[adim-1]**2) - x[0]
+    for i in range(adim):
+        ans += 0.5*(x[i] - x[i+1])**2
     ans += sig*np.random.randn(1)
     return ans
-   
-adim =10
-dim = 100
 
-init_pt=10*np.ones(dim)
+init_pt = np.random.randn(dim)
 
 print(nesterov_2_f(init_pt))
 
-ntrials = 10
-maxit = 6000
+ntrials = 1
+maxit = 2500
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
@@ -53,7 +53,7 @@ for trial in range(ntrials):
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
-    # adapt every 10 timesteps using quadratic(after inital burn)
+    # adapt every time.adapt timesteps using quadratic(after inital burn)
     test.train_method = 'GQ'
     test.adapt = 250 # Sets number of sub-cylcing steps
     
@@ -67,15 +67,15 @@ for trial in range(ntrials):
 stop = timeit.default_timer()
 
 # Difference stop-start tells us run time
-time= stop-start
+time = stop - start
 
-print('the time of this experiment was:    ', time)
+print('the time of this experiment was:    ', time/3600, 'hours')
 
 
 f_avr /= ntrials
 f2_avr /= ntrials
 
-fstar = .5*(-1.0 + 1.0 / (adim+1))
+fstar = .5*(-1.0 + 1.0 / (adim + 1))
  
 plt.semilogy(np.absolute(fstar-f_avr),label='Stars')
 plt.semilogy(np.absolute(fstar-f2_avr), label='Astars')
