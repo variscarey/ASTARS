@@ -11,19 +11,26 @@ import matplotlib.pyplot as plt
 
 #import active_subspaces as as   
 from astars.stars_sim import Stars_sim
+from astars.utils.misc import subspace_dist
 
-def toy_f(x,var=1E-2):
-    return x[0]**2 + var*np.random.randn(1)
+mag = 1E6
+dim = 10
+#weights = np.random.randn(10)
+weights=np.ones(dim)
+true_as = weights / np.linalg.norm(weights)
+
+def toy_f(x,var=1E-6):
+    return mag*(np.dot(weights,x))**2 + var*np.random.randn(1)
     
 
-init_pt= np.random.randn(20,1)
-ntrials = 2
-maxit = 200
+init_pt = np.random.randn(dim)
+ntrials = 400
+maxit = 100
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = mag*2.0, var = 1E-12, verbose = False, maxit = maxit)
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -33,12 +40,12 @@ for trial in range(ntrials):
     
     #update average of f
     f_avr += test.fhist  
-    
+    print('STARS trial',trial,' minval',test.fhist[-1])
 f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = mag*2.0, var = 1E-12, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -48,9 +55,12 @@ for trial in range(ntrials):
     
     # do 100 steps
     while test.iter < test.maxit:
-        test.step()    
+        test.step()  
+        if test.iter % 20 == 0 and test.active is not None:
+            print('Step',test.iter,'Active dimension',test.active.shape[1])
+            print('Subspace Distance',subspace_dist(true_as,test.active))
     f2_avr += test.fhist
-    print('trial',trial,' minval',test.fhist[-1])
+    print('ASTARS trial',trial,' minval',test.fhist[-1])
 
 f_avr /= ntrials
 f2_avr /= ntrials

@@ -205,7 +205,7 @@ class Stars_sim:
             #prevent overfitting
             #ss.train(X=train_x,f=train_f,sstype='QPHD')
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
-            gquad.train(train_x, train_f)
+            gquad.train(train_x, train_f) #regul = self.var)
             # get regression coefficients
             b, A = gquad.g, gquad.H
 
@@ -243,8 +243,11 @@ class Stars_sim:
                 if self.verbose:
                     print('Updated L1 to',self.L1)
             #if self.train_method = None and rbf.N >= 2:
-                
-        self.active=ss.eigenvecs[:,0:adim]
+        scale = (ub-lb)/2.0
+        print('scale',scale)
+        self.active=scale*ss.eigenvecs[:,0:adim]
+        #rescale
+        self.active /= np.linalg.norm(self.active)
         self.wts=ss.eigenvals
         ##update ASTARS parameters
         self.get_mu_star()
