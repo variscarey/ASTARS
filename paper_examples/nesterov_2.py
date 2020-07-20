@@ -57,13 +57,6 @@ for trial in range(ntrials):
     test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-4, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
-<<<<<<< HEAD
-    test.get_h() 
-    # adapt every 10 timesteps using quadratic(after inital burn)
-=======
-    test.get_h()
-    # adapt every time.adapt timesteps using quadratic(after inital burn)
->>>>>>> 8ac7077519825adbb19c0c1b8a81bfda1c5348f3
     test.train_method = 'GQ'
     test.adapt = 500 #ts number of sub-cylcing steps
 
@@ -88,18 +81,11 @@ print('the time of this experiment was:    ', time/3600, 'hours')
 f_avr /= ntrials
 f2_avr /= ntrials
 
-<<<<<<< HEAD
-fstar = .5*(-1.0 +  1.0 / 11.0)
- 
 
-plt.semilogy(np.absolute(fstar-f_avr),label='Stars')
-plt.semilogy(np.absolute(fstar-f2_avr), label='Astars')
-
-=======
 fstar = .5*(-1.0 + 1.0 / (adim + 1))
  
 plt.semilogy(np.absolute(fstar-f_avr),label='Stars')
 plt.semilogy(np.absolute(fstar-f2_avr), label='Astars')
->>>>>>> 8ac7077519825adbb19c0c1b8a81bfda1c5348f3
+
 plt.legend()
 plt.show()
