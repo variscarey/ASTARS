@@ -21,9 +21,9 @@ def nesterov_f(x,var=1E-2):
     return ans
     
 
-init_pt=5*np.random.randn(10,1)
+init_pt=5*np.random.randn(10)
 ntrials = 2
-maxit = 200
+maxit = 2000
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):

@@ -12,19 +12,23 @@ import matplotlib.pyplot as plt
 #import active_subspaces as as   
 from astars.stars_sim import Stars_sim
 
-def toy_f(x,var=1E-2):
-    return (np.sum(x))**2 + var*np.random.randn(1)
-    
+s_factor=1E6
 
-dim=20
-init_pt=10*np.random.randn(dim,1)
-ntrials = 200
-maxit = 50
+def toy_f(x,sig=1E-6):
+    return s_factor*(np.sum(x))**2 + sig*np.random.randn(1)
+    
+sig=1E-6
+our_var=sig**2
+
+dim=10
+init_pt=np.random.randn(dim,1)
+ntrials = 2000
+maxit = 125
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = 2.0*s_factor, var=our_var, verbose = False, maxit = maxit)
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -39,13 +43,13 @@ f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = 2.0*s_factor, var=our_var, verbose = False, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)
     test.train_method = 'GQ'
-    test.adapt = 10 # Sets number of sub-cylcing steps
+    test.adapt = 20 # Sets number of sub-cylcing steps
     
     # do 100 steps
     while test.iter < test.maxit:
