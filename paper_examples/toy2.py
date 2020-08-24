@@ -11,24 +11,32 @@ import matplotlib.pyplot as plt
 
 #import active_subspaces as as   
 from astars.stars_sim import Stars_sim
+from astars.utils.misc import subspace_dist
 
-s_factor=1E6
 
-def toy_f(x,sig=1E-6):
-    return s_factor*(np.sum(x))**2 + sig*np.random.randn(1)
+mag = 1E6
+dim = 10
+#weights = np.random.randn(10)
+weights=np.ones(dim)
+true_as = weights / np.linalg.norm(weights)
+
+def toy_f(x,var=1E-6):
+    return mag*(np.dot(weights,x))**2 + var*np.random.randn(1)
     
 sig=1E-6
 our_var=sig**2
 
 dim=10
-init_pt=np.random.randn(dim,1)
-ntrials = 2000
-maxit = 125
+
+init_pt = np.random.randn(dim)
+ntrials = 400
+maxit = 100
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
     test = Stars_sim(toy_f, init_pt, L1 = 2.0*s_factor, var=our_var, verbose = False, maxit = maxit)
+
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -38,12 +46,13 @@ for trial in range(ntrials):
     
     #update average of f
     f_avr += test.fhist  
-    
+    print('STARS trial',trial,' minval',test.fhist[-1])
 f2_avr = np.zeros(maxit+1)
 
 for trial in range(ntrials):
     #sim setup
     test = Stars_sim(toy_f, init_pt, L1 = 2.0*s_factor, var=our_var, verbose = False, maxit = maxit)
+
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -53,9 +62,12 @@ for trial in range(ntrials):
     
     # do 100 steps
     while test.iter < test.maxit:
-        test.step()    
+        test.step()  
+        if test.iter % 20 == 0 and test.active is not None:
+            print('Step',test.iter,'Active dimension',test.active.shape[1])
+            print('Subspace Distance',subspace_dist(true_as,test.active))
     f2_avr += test.fhist
-    print('trial',trial,' minval',test.fhist[-1])
+    print('ASTARS trial',trial,' minval',test.fhist[-1])
 
 f_avr /= ntrials
 f2_avr /= ntrials

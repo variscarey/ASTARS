@@ -19,6 +19,8 @@ def toy_f(x,var=1E-2):
 init_pt=5*np.random.randn(20)
 ntrials = 20
 maxit = 250
+
+
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
