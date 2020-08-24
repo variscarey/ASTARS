@@ -73,6 +73,7 @@ class Stars_sim:
                 print('Approximate value of L1=',self.L1)
         self.xhist[:,0] = self.x
         self.fhist[0] = self.f(self.x)
+        self.sigma = np.sqrt(self.var)
             
     def get_mu_star(self):
         if self.active is None:
@@ -193,7 +194,7 @@ class Stars_sim:
         
         if self.train_method is None:
             #determine appropriate training method (RBF+polynomial)
-            ss,rbf=train_rbf(train_x,train_f,noise=self.var)
+            ss,rbf=train_rbf(train_x,train_f,noise=self.sigma)
         elif self.train_method == 'LL':
             #Estimated gradients using local linear models
             df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
@@ -205,7 +206,7 @@ class Stars_sim:
             #prevent overfitting
             #ss.train(X=train_x,f=train_f,sstype='QPHD')
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
-            gquad.train(train_x, train_f, regul = self.var) #regul = self.var)
+            gquad.train(train_x, train_f, regul = self.sigma) #regul = self.var)
             # get regression coefficients
             b, A = gquad.g, gquad.H
 
