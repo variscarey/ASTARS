@@ -15,7 +15,7 @@ class Stars_sim:
 
         #constructor input processing
         self.f = f
-        self.L1 =L1
+        self.L1 = L1
         self.x = np.copy(x_start)
         self.var = var #variance of additive noise
         self.mult = mult
@@ -34,7 +34,7 @@ class Stars_sim:
         self.use_weights = False
         #process initial input vector
         if self.x.ndim > 1:
-            self.x=self.x.flatten()
+            self.x = self.x.flatten()
         self.dim = self.x.size
         
         #preallocate history arrays for efficiency
@@ -103,7 +103,7 @@ class Stars_sim:
 
         if not self.STARS_only:
             if self.active is None or (self.adapt > 0  and self.iter%self.adapt == 0):
-                if self.train_method is None:
+                if self.train_method is None or self.train_method == 'LL':
                     if 2*self.iter > self.dim:
                         self.compute_active()   
                 elif self.train_method == 'GQ':
@@ -196,7 +196,7 @@ class Stars_sim:
             ss,rbf=train_rbf(train_x,train_f,noise=self.var)
         elif self.train_method == 'LL':
             #Estimated gradients using local linear models
-            df = ac.gradients.local_linear_gradients(train_x, train_f) 
+            df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
             ss.compute(df=df, nboot=0)
         elif self.train_method == 'GQ':
             #use global quadratic surrogate
@@ -205,7 +205,7 @@ class Stars_sim:
             #prevent overfitting
             #ss.train(X=train_x,f=train_f,sstype='QPHD')
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
-            gquad.train(train_x, train_f) #regul = self.var)
+            gquad.train(train_x, train_f, regul = self.var) #regul = self.var)
             # get regression coefficients
             b, A = gquad.g, gquad.H
 
@@ -233,9 +233,9 @@ class Stars_sim:
                 temp = np.abs(d2f[0,:,:])
                 print('|Hessian| on mapped domain',temp)
                 scale = .5*(ub-lb)
-                print('Variable Scalings',scale)
-                scale = scale @ scale.T
-                #print(scale)
+                if self.debug is True:
+                    print('Variable Scalings',scale)
+                    scale = scale @ scale.T
 
                 
                 #sufficient for quadratic response surface
@@ -244,7 +244,8 @@ class Stars_sim:
                     print('Updated L1 to',self.L1)
             #if self.train_method = None and rbf.N >= 2:
         scale = (ub-lb)/2.0
-        print('scale',scale)
+        if self.debug is True:
+            print('scale',scale)
         self.active=scale*ss.eigenvecs[:,0:adim]
         #rescale
         self.active /= np.linalg.norm(self.active)
