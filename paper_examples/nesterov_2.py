@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 from astars.stars_sim import Stars_sim
 import timeit
 
+adim = 5
 
-adim =10
 dim = 50
 
 
@@ -34,7 +34,7 @@ f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-6, verbose = False, maxit = maxit)
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -54,11 +54,13 @@ start = timeit.default_timer()
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-6, verbose = True, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
     test.train_method = 'GQ'
+
     test.adapt = 500 #ts number of sub-cylcing steps
+
 
     
     # do 100 steps
