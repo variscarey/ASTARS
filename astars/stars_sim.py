@@ -4,6 +4,7 @@ print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file_
 
 from .utils.stars_param import get_L1,ECNoise
 from .utils.surrogates import train_rbf
+from .utils.misc import find_active
 
 import numpy as np
 import active_subspaces as ac
@@ -36,6 +37,7 @@ class Stars_sim:
         if self.x.ndim > 1:
             self.x = self.x.flatten()
         self.dim = self.x.size
+        self.threshold = .95 #set active subspace total svd threshold
         
         #preallocate history arrays for efficiency
         self.xhist = np.zeros((self.dim,self.maxit+1))
@@ -189,6 +191,9 @@ class Stars_sim:
 
         #print(lb,ub)
         train_x=nrm_data.normalize(train_x.T)
+        if self.debug is True:
+            print(np.amax(train_x, axis = 0))
+            print(np.amin(train_x, axis = 0))
         #print(train_x.shape)
         
         
@@ -215,16 +220,11 @@ class Stars_sim:
             # normalization assumes [-1,1] inputs from above
             
             C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
+            D = np.diag(1.0/(.5*(ub-lb).flatten()))
+            C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
 
-        #look for 95% variation
-        #out_wts=np.sqrt(ss.eigenvals)
-        total_var=np.sum(ss.eigenvals)
-        svar=0
-        adim=0
-        while svar < .95*total_var:
-            svar += ss.eigenvals[adim]
-            adim+=1
+        adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:
             print('Subspace Dimension',adim)
             print(ss.eigenvals[0:adim])
@@ -246,11 +246,10 @@ class Stars_sim:
                     print('Updated L1 to',self.L1)
             #if self.train_method = None and rbf.N >= 2:
         scale = (ub-lb)/2.0
-        if self.debug is True:
-            print('scale',scale)
-        self.active=scale*ss.eigenvecs[:,0:adim]
-        #rescale
-        self.active /= np.linalg.norm(self.active)
+        #if self.debug is True:
+        #   print('scale',scale)
+        self.active=ss.eigenvecs[:,0:adim]
+ 
         self.wts=ss.eigenvals
         ##update ASTARS parameters
         self.get_mu_star()
