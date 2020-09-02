@@ -217,9 +217,9 @@ class Stars_sim:
                 C = D @ C @ D
                 
             elif train_f.size > (self.dim + 1):
-                glin = ac.utils.response_surfaces.PolynomialApproximation(N=1)
-                glin.train(train_x, train_f, regul = self.regul)
-                b = glin.g
+                gquad = ac.utils.response_surfaces.PolynomialApproximation(N=1)
+                gquad.train(train_x, train_f, regul = self.regul)
+                b = gquad.g
                 C = np.outer(b, b.transpose()) #+ 1.0/3.0*np.dot(A, A.transpose())
                 D = np.diag(1.0/(.5*(ub-lb).flatten()))
                 C = D @ C @ D
