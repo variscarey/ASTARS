@@ -200,11 +200,36 @@ class Stars_sim:
         
         if self.train_method is None:
             #determine appropriate training method (RBF+polynomial)
-            ss,rbf=train_rbf(train_x,train_f,noise=self.regul)
+            #use polynomial model for now, use data to determine degree
+            #ss,rbf=train_rbf(train_x,train_f,noise=self.regul)
+           
+            if train_f.size > (self.dim+1)*(self.dim+2)/2:
+                gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
+                gquad.train(train_x, train_f, regul = self.regul) #regul = self.var)
+                # get regression coefficients
+                b, A = gquad.g, gquad.H
+
+                # compute variation of gradient of f, analytically
+                # normalization assumes [-1,1] inputs from above
+            
+                C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
+                D = np.diag(1.0/(.5*(ub-lb).flatten()))
+                C = D @ C @ D
+                
+            elif train_f.size > (self.dim + 1):
+                glin = ac.utils.response_surfaces.PolynomialApproximation(N=1)
+                glin.train(train_x, train_f, regul = self.regul)
+                b = glin.g
+                C = np.outer(b, b.transpose()) #+ 1.0/3.0*np.dot(A, A.transpose())
+                D = np.diag(1.0/(.5*(ub-lb).flatten()))
+                C = D @ C @ D
+            ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
+        
         elif self.train_method == 'LL':
             #Estimated gradients using local linear models
             df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
             ss.compute(df=df, nboot=0)
+        
         elif self.train_method == 'GQ':
             #use global quadratic surrogate
             #use training method from AS, should give exact integral?
@@ -213,6 +238,7 @@ class Stars_sim:
             #ss.train(X=train_x,f=train_f,sstype='QPHD')
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
             gquad.train(train_x, train_f, regul = self.regul) #regul = self.var)
+
             # get regression coefficients
             b, A = gquad.g, gquad.H
 
@@ -223,7 +249,9 @@ class Stars_sim:
             D = np.diag(1.0/(.5*(ub-lb).flatten()))
             C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
-
+        
+        print('Condition number',gquad.cond)
+        print('Rsqr',gquad.Rsqr)
         adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:
             print('Subspace Dimension',adim)
