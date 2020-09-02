@@ -21,6 +21,7 @@ class toy2:
                 self.sig = sig
                 self.var = self.sig**2
                 self.name = 'Toy 2'
+                self.fstar = 0
                 if weights is None:
                     self.weights = np.ones(self.dim)
  
@@ -42,9 +43,35 @@ class sphere:
               self.L1 = 2.0*self.mag
               self.var = self.sig**2
               self.name = 'Active Sphere'
+              self.fstar = 0
             
         def __call__(self,X):
             return np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
+ 
+class nesterov_2_f:
+    
+    def __init__(self, dim = 50, adim = 5, sig = 1E-4):
+        self.dim = dim
+        self.adim = adim
+        self.sig = sig
+        
+        self.L1 = 4.0
+        self.var = self.sig**2
+        self.name = 'Nesterov 2'
+        self.fstar = .5*(-1 + 1 / (self.adim + 1))
+    
+    def __call__(self,x):
+        
+        ans = 0.5*(x[0]**2 + x[self.adim-1]**2) - x[0]
+        for i in range(self.adim-1):
+            ans += .5*(x[i] - x[i+1])**2
+            if ans.ndim == 1:
+                ans += self.sig*np.random.randn(1)
+            else:
+                ans += self.sig*np.random.randn(ans.size)
+        return ans
+    
+    
     
 #def toy_f(x,var=1E-6):
 #    return mag*(np.dot(weights,x))**2 + var*np.random.randn(1)
@@ -56,13 +83,15 @@ class sphere:
 
 toy2f = toy2()
 sph = sphere()
+nest = nesterov_2_f()
 
-for f in {toy2f,sph}:
+for f in {nest}:
+#for f in {toy2f,sph}:
     dim = f.dim
-    init_pt = 10*np.random.rand(dim)
-    ntrials = 5
-    #maxit = dim**2
-    maxit = 1000
+    init_pt = np.random.randn(dim)
+    ntrials = 1
+    maxit = 3*dim**2
+    #maxit = 1000
     f2_avr = np.zeros(maxit+1)
     f_avr = np.zeros(maxit+1)
     for trial in range(ntrials):
@@ -86,10 +115,11 @@ for f in {toy2f,sph}:
         test.get_h()
         # adapt every 10 timesteps using quadratic(after inital burn)
         test.train_method = 'GQ'
-        test.adapt = dim # Sets number of sub-cylcing steps
+        test.adapt = 2*dim # Sets number of sub-cylcing steps
         #test.regul *= 100
         #test.debug = True
-        test.regul = None
+        test.regul = None #test.sigma
+        test.threshold = .99
         # do 100 steps
         while test.iter < test.maxit:
             test.step()  
@@ -113,8 +143,8 @@ for f in {toy2f,sph}:
     f_avr /= ntrials
     f2_avr /= ntrials
  
-    plt.semilogy(f_avr,label='Stars')
-    plt.semilogy(f2_avr, label='Astars')
+    plt.semilogy(np.abs(f_avr-f.fstar),label='Stars')
+    plt.semilogy(np.abs(f2_avr-f.fstar), label='Astars')
     plt.title(f.name)
     plt.legend()
     plt.show()
