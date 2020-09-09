@@ -8,6 +8,7 @@ Created on 9/1/2020
 
 import numpy as np
 import matplotlib.pyplot as plt
+import timeit
 
 import active_subspaces as ss   
 from astars.stars_sim import Stars_sim
@@ -15,7 +16,7 @@ from astars.utils.misc import subspace_dist, find_active
 
 class nesterov:
     
-    def __init__(self, dim = 10, sig = 1E-4):
+    def __init__(self, dim = 10, sig = 1E-1):
         self.dim = dim
         self.sig = sig
         self.L1 = 2**11
@@ -35,15 +36,17 @@ class nesterov:
         
 f = nesterov()
 
-thresholds = [0.9,0.99,0.999,0.9999]
+thresholds = [0.99,0.9999,0.999999]
 this_init_pt = np.random.randn(f.dim)
 
-ntrials = 10
-maxit = 20000
+ntrials = 100
+maxit = 100000
 
 f_avr = np.zeros(maxit+1)
 f2_avr = np.zeros((maxit+1,np.size(thresholds)))
-print(np.size(thresholds))
+
+# Start the clock!
+start = timeit.default_timer()
 
 # STARS
 for trial in range(ntrials):
@@ -66,7 +69,8 @@ for i in range(np.size(thresholds)):
         test.get_mu_star()
         test.get_h()
         test.train_method = 'GQ'
-        test.adapt = 3.0*f.dim # Sets number of sub-cylcing steps
+        #test.adapt = 3.0*f.dim # Sets number of sub-cylcing steps
+        test.adapt = 1000
         test.regul = None #test.sigma
         test.threshold = thresholds[i]
 	# do 100 steps
@@ -76,6 +80,15 @@ for i in range(np.size(thresholds)):
         f2_avr[:,i] += test.fhist
         print('ASTARS trial',trial,' minval',test.fhist[-1])
 	    
+
+# Stop the clock!
+stop = timeit.default_timer()
+
+# Difference stop-start tells us run time
+time = stop - start
+
+print('the time of this experiment was:    ', time/3600, 'hours')
+
 f_avr /= ntrials
 f2_avr /= ntrials
 
