@@ -19,7 +19,7 @@ class nesterov:
     def __init__(self, dim = 10, sig = 1E-1):
         self.dim = dim
         self.sig = sig
-        self.L1 = 2**11
+        self.L1 = 2**9
         self.var = self.sig**2
         self.name = 'Nesterov'
         self.fstar = 0
@@ -35,12 +35,13 @@ class nesterov:
         return ans
         
 f = nesterov()
+my_thresh = 1-2**(-16)
 
-thresholds = [0.99,0.9999,0.999999]
+thresholds = [0.9,0.99,0.999,0.9999]
 this_init_pt = np.random.randn(f.dim)
 
 ntrials = 100
-maxit = 100000
+maxit = 2000
 
 f_avr = np.zeros(maxit+1)
 f2_avr = np.zeros((maxit+1,np.size(thresholds)))
@@ -70,7 +71,7 @@ for i in range(np.size(thresholds)):
         test.get_h()
         test.train_method = 'GQ'
         #test.adapt = 3.0*f.dim # Sets number of sub-cylcing steps
-        test.adapt = 1000
+        test.adapt = 10
         test.regul = None #test.sigma
         test.threshold = thresholds[i]
 	# do 100 steps
