@@ -93,8 +93,8 @@ def ECNoise(f,x_b,h=1E-2,M=3,mult_flag=False):
                 print(np.abs(diff_col[0:-i,i]) < np.finfo(float).tiny)
                 print('h is too small. Try 100*h next. Default is h=0.01.')
                 print('diff column',diff_col[:,i])
-                sigma_hat = [-2]
-                return sigma_hat
+                sigma_hat = -2
+                return sigma_hat,False
         else:
            diff_col[0:-i,i] = diff_col[1:-i+1,i-1] - diff_col[0:-i,i-1] 
         
@@ -117,13 +117,13 @@ def ECNoise(f,x_b,h=1E-2,M=3,mult_flag=False):
         if dmax <= 4*dmin and d_sign[k] == 1:
             sigma_hat = est[k]
             if mult_flag is False:
-                noise_array = [sigma_hat, xvals, fvals]
+                noise_array = [xvals, fvals]
                 level = k+1
                 print('Using difference level',k+1)
                 break
                 #return noise_array
             else:
-                noise_array = [sigma_hat/fvals[0]**2, xvals, fvals] 
+                sigma_hat = est[k]/fvals[0]**2
                 break
                 #return noise_array
         else:
@@ -134,25 +134,25 @@ def ECNoise(f,x_b,h=1E-2,M=3,mult_flag=False):
         # return print('h is too large. Try 0.01*h next. Default is h=0.01.')
         print(est)
         print(d_sign)
-        sigma_hat = [-1]
-        return sigma_hat
+        sigma_hat = -1
+        return sigma_hat,False
     
     #NEW, DETERMINE L1 after noise found
     f2d = fvals[0:-2]+fvals[2:]-2*fvals[1:-1]
     print('difference quotients',f2d)
-    if np.max(np.abs(f2d)) > 100*noise_array[0]:
+    if np.max(np.abs(f2d)) > 100*sigma_hat:
         L1 = np.max(np.abs(f2d))/h**2
     else:
         print('Warning: h may be too small for accurate L1')
         f2d=np.abs(fvals[0]+fvals[-1]-2*fvals[M])
         L1=np.max(f2d)/(M*h)**2
     print('L1=',L1)
-    return noise_array,L1,level
+    return sigma_hat,[xvals,fvals,L1,level]
     
 
 
 
-def get_L1(xdata,fdata,var,degree = 3):
+def get_L1(xdata,fdata,var,degree = 3, plot = True):
     ''' 
     computes approximate L1 Lipschitz constant by using 1D polynomial
     '''
@@ -160,29 +160,47 @@ def get_L1(xdata,fdata,var,degree = 3):
     import numpy as np
     import matplotlib.pyplot as plt
     
-    from .reg_ls import ls_l2reg
     
     #scale data on (0,1)
-    map=1/(xdata[-1]-xdata[0])
+    #deleting scaling map=1/(xdata().max-xdata.min())
     
     #vandermone matrix with normalized coefficeints
-    X=np.vander(xdata*map,N=degree+1,increasing=True)
+    X=np.vander(xdata,N=degree+1,increasing=True)
     coeff=ls_l2reg(X,var,fdata)
-    print('fit coefficients on [0,1]',coeff)
-  
-    poly=np.polynomial.Polynomial( coeff,domain=[xdata.min(),xdata.max()],window=[0,1])
-    
-    plt.plot(poly.linspace()[0],poly.linspace()[1])
-    plt.scatter(xdata,fdata)
-    plt.show()
-    
-    #TODO: put in non-grid search solve for L1.
-    temp=(poly.deriv(2)).linspace()
-    plt.plot(temp[0],temp[1])
-    plt.show()
+    #print('fit coefficients on(',xdata.min(),xdata.max(),')',coeff)
+    if degree == 2:
+        #print('1D coordinates',xdata)
+        #print('1D data',fdata)
+        #xp=np.linspace(xdata.min(),xdata.max())
+        #plt.plot(xp,coeff[0]+coeff[1]*xp+coeff[2]*xp**2)
+        #plt.scatter(xdata,fdata)
+        #plt.show()
+        return 2*np.abs(coeff[2])
+        
+    else:
+        poly=np.polynomial.Polynomial( coeff,domain=[xdata.min(),xdata.max()],window=[0,1])
+        temp=(poly.deriv(2)).linspace()
+        if plot:
+            plt.plot(poly.linspace()[0],poly.linspace()[1])
+            plt.scatter(xdata,fdata)
+            plt.show()
+            plt.plot(temp[0],temp[1])
+            plt.show()
    
     return np.max(np.absolute(temp[1]))
 
+def ls_l2reg(X,regul,f):
+    #print('Regularization param',regul)
+    alpha=regul*np.ones(X.shape[1],dtype=X.dtype)
+    #don't regularize the mean
+    alpha[0]=0
+    U,s,VT=np.linalg.svd(X,full_matrices=False)
+    rhs = U.T @ f
+    #s = s.reshape(-1,1)
+    d = s/(s ** 2 + alpha)
+    rhs*=d
+    poly_weights = VT.T @ rhs
+    return poly_weights
 
 
 

@@ -50,19 +50,23 @@ class Stars_sim:
             while self.var is None:
                 if self.verbose:
                     print('Calling ECNoise to determine noise variance,h=',h)
-                temp=ECNoise(self.f,self.x,h=h,mult_flag=self.mult)
-            
-                if temp[0][0] > 0: 
+                sigma,temp=ECNoise(self.f,self.x,h=h,mult_flag=self.mult)
+                #print(type(temp))
+                if sigma > 0:
                     #ECNoise success
-                    self.var=temp[0][0]**2
+                    self.var=sigma**2
                     if self.verbose:
                         print('Approx. variance of noise=',self.var)
-                    self.x_noise=temp[0][1]
-                    self.f_noise=temp[0][2]
-                elif temp[0][0] == -1:
+                    self.x_noise=temp[0]
+                    self.f_noise=temp[1]
+                    self.L1 = temp[2]
+                    print('L1 from EC Noise', self.L1)
+                elif temp == -1:
                     h /= 100
-                elif temp[1][0] == -2:
+                elif temp == -2:
                     h *= 100
+                   
+                    
             #allocate xhist and fhist to use training data as well
         if self.L1 is None:
             if self.verbose is True:
@@ -151,13 +155,23 @@ class Stars_sim:
         self.yhist[:,self.iter-1]=y
         self.ghist[self.iter-1]=g
     
-        #if self.update_L1 is True and self.mult is False:
+        if self.update_L1 is True and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
             #not implemented for multiplicative noise yet 
             #1Dx data
-            #x1d=np.array([0,np.linalg.norm(u),np.linalg.norm(s)])
-            #L1=get_L1(x1d,[f0,g,self.fhist[self.iter]],self.var)
-            #self.L1=np.max(L1,self.L1)
+            nrmu=np.linalg.norm(u)
+            x1d=np.array([0,mu_star*nrmu,-self.h*np.dot(s,u/nrmu)])
+            f1d=np.array([f0,self.ghist[self.iter-1],self.fhist[self.iter]])
+            L1=get_L1(x1d,f1d,self.var,degree = 2)
+            if self.verbose is True:
+                print('Local L1 value',L1)
+            if L1 > self.L1:
+                self.L1=L1
+                print('Updated L1 to',self.L1)
+                print('Updating hyperparameters')
+                self.get_mu_star()
+                self.get_h()
+            
         if self.debug:
             print(self.iter,self.fhist[self.iter])
             with (np.printoptions(precision = 4, suppress = True)):
@@ -200,11 +214,36 @@ class Stars_sim:
         
         if self.train_method is None:
             #determine appropriate training method (RBF+polynomial)
-            ss,rbf=train_rbf(train_x,train_f,noise=self.regul)
+            #use polynomial model for now, use data to determine degree
+            #ss,rbf=train_rbf(train_x,train_f,noise=self.regul)
+           
+            if train_f.size > (self.dim+1)*(self.dim+2)/2:
+                gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
+                gquad.train(train_x, train_f, regul = self.regul) #regul = self.var)
+                # get regression coefficients
+                b, A = gquad.g, gquad.H
+
+                # compute variation of gradient of f, analytically
+                # normalization assumes [-1,1] inputs from above
+            
+                C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
+                D = np.diag(1.0/(.5*(ub-lb).flatten()))
+                C = D @ C @ D
+                
+            elif train_f.size > (self.dim + 1):
+                gquad = ac.utils.response_surfaces.PolynomialApproximation(N=1)
+                gquad.train(train_x, train_f, regul = self.regul)
+                b = gquad.g
+                C = np.outer(b, b.transpose()) #+ 1.0/3.0*np.dot(A, A.transpose())
+                D = np.diag(1.0/(.5*(ub-lb).flatten()))
+                C = D @ C @ D
+            ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
+        
         elif self.train_method == 'LL':
             #Estimated gradients using local linear models
             df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
             ss.compute(df=df, nboot=0)
+        
         elif self.train_method == 'GQ':
             #use global quadratic surrogate
             #use training method from AS, should give exact integral?
@@ -213,6 +252,7 @@ class Stars_sim:
             #ss.train(X=train_x,f=train_f,sstype='QPHD')
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
             gquad.train(train_x, train_f, regul = self.regul) #regul = self.var)
+
             # get regression coefficients
             b, A = gquad.g, gquad.H
 
@@ -223,27 +263,29 @@ class Stars_sim:
             D = np.diag(1.0/(.5*(ub-lb).flatten()))
             C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
-
+        
+        print('Condition number',gquad.cond)
+        print('Rsqr',gquad.Rsqr)
         adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:
             print('Subspace Dimension',adim)
             print(ss.eigenvals[0:adim])
             print('Subspace',ss.eigenvecs[:,0:adim])
-        if self.update_L1 is True and self.train_method != 'LL':
-            if self.train_method == 'GQ':
-                d2f = gquad.comp_hessian(train_x)
-                temp = np.abs(d2f[0,:,:])
-                print('|Hessian| on mapped domain',temp)
-                scale = .5*(ub-lb)
-                if self.debug is True:
-                    print('Variable Scalings',scale)
-                    scale = scale @ scale.T
+        #if self.update_L1 is True and self.train_method != 'LL':
+        #    if self.train_method == 'GQ':
+        #        d2f = gquad.comp_hessian(train_x)
+        #        temp = np.abs(d2f[0,:,:])
+        #        print('|Hessian| on mapped domain',temp)
+        #        scale = .5*(ub-lb)
+        #        if self.debug is True:
+        #            print('Variable Scalings',scale)
+        #            scale = scale @ scale.T
 
                 
                 #sufficient for quadratic response surface
-                self.L1 = np.amax(temp/scale)
-                if self.verbose:
-                    print('Updated L1 to',self.L1)
+        #        self.L1 = np.amax(temp/scale)
+        #        if self.verbose:
+        #            print('Updated L1 to',self.L1)
             #if self.train_method = None and rbf.N >= 2:
         scale = (ub-lb)/2.0
         #if self.debug is True:
