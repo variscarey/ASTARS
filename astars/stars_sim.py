@@ -264,7 +264,7 @@ class Stars_sim:
             C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
         
-        print('Condition number',gquad.cond)
+        #print('Condition number',gquad.cond)
         print('Rsqr',gquad.Rsqr)
         adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:

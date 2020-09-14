@@ -32,14 +32,14 @@ def toy_f(x,sig=our_sig):
 
 init_pt = np.random.randn(dim)
 ntrials = 400
-maxit = 100
+maxit = 200
 
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
 
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0*mag, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = 2.0*mag*dim, var = our_var, verbose = False, maxit = maxit)
 
     test.STARS_only = True
     test.get_mu_star()
@@ -56,7 +56,7 @@ f2_avr = np.zeros(maxit+1)
 for trial in range(ntrials):
     #sim setup
 
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0*mag,verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = 2.0*mag*dim, var = our_var, verbose = False, maxit = maxit)
 
     #test.STARS_only = True
     test.get_mu_star()
