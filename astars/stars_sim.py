@@ -241,6 +241,7 @@ class Stars_sim:
         
         elif self.train_method == 'LL':
             #Estimated gradients using local linear models
+            print(train_x.size,train_f.size)
             df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
             ss.compute(df=df, nboot=0)
         
