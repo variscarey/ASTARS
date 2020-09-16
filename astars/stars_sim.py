@@ -59,8 +59,9 @@ class Stars_sim:
                         print('Approx. variance of noise=',self.var)
                     self.x_noise=temp[0]
                     self.f_noise=temp[1]
-                    self.L1 = temp[2]
-                    print('L1 from EC Noise', self.L1)
+                    if self.L1 is None:
+                        self.L1 = temp[2]
+                        print('L1 from EC Noise', self.L1)
                 elif temp == -1:
                     h /= 100
                 elif temp == -2:

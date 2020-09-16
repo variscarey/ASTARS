@@ -21,7 +21,7 @@ class new_test:
         self.sig = sig
         self.L1 = 2.0
         self.var = self.sig**2
-        self.name = 'Nesterov'
+        self.name = 'Sphere function'
         self.fstar = 0
        
     
@@ -37,10 +37,10 @@ class new_test:
         
 f = new_test()
 
-K = [1,0.1,0.25,4]
+K = [1,0.1,0.2,4]
 this_init_pt = 10*np.random.randn(f.dim)
 
-ntrials = 1000
+ntrials = 10
 maxit = 200
 
 f_avr = np.zeros((maxit+1,np.size(K)))
@@ -87,7 +87,7 @@ print(f_avr)
 
 
 for i in range(np.size(K)):
-    plt.semilogy(np.abs(f_avr[:,i]-f.fstar), label='STARS, thresh='+str(K[i]))
+    plt.semilogy(np.abs(f_avr[:,i]-f.fstar), label='STARS, L1 scaled by '+str(K[i]))
 
 
 
