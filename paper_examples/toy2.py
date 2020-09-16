@@ -30,8 +30,8 @@ def toy_f(x,sig=our_sig):
 
 
 
-init_pt = np.random.randn(dim)
-ntrials = 400
+init_pt = 10*np.random.randn(dim)
+ntrials = 200
 maxit = 200
 
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
