@@ -40,6 +40,7 @@ class Stars_sim:
         self.threshold = .95 #set active subspace total svd threshold
         
         #preallocate history arrays for efficiency
+        self.x_noise = None
         self.xhist = np.zeros((self.dim,self.maxit+1))
         self.fhist = np.zeros(self.maxit+1)
         self.ghist = np.zeros(self.maxit)
@@ -59,15 +60,15 @@ class Stars_sim:
                         print('Approx. variance of noise=',self.var)
                     self.x_noise=temp[0]
                     self.f_noise=temp[1]
-                    self.L1 = temp[2]
-                    print('L1 from EC Noise', self.L1)
+                    if self.L1 is None:
+                        self.L1 = temp[2]
+                        print('L1 from EC Noise', self.L1)
                 elif temp == -1:
                     h /= 100
                 elif temp == -2:
-                    h *= 100
-                   
+                    h *= 100   
                     
-            #allocate xhist and fhist to use training data as well
+
         if self.L1 is None:
             if self.verbose is True:
                 print('Determining initial L1 from ECNoise Data')
@@ -182,13 +183,22 @@ class Stars_sim:
     
 
         ss=ac.subspaces.Subspaces()
-        #TODO: include training data x_noise,f_noise
-        if self.Window is None:
-            train_x=np.hstack((self.xhist[:,0:self.iter+1],self.yhist[:,0:self.iter]))
-            train_f=np.hstack((self.fhist[0:self.iter+1],self.ghist[0:self.iter]))
+        # we now include training data x_noise,f_noise from ECNoise
+        if self.x_noise is None:
+            if self.Window is None:
+                train_x=np.hstack((self.xhist[:,0:self.iter+1],self.yhist[:,0:self.iter]))
+                train_f=np.hstack((self.fhist[0:self.iter+1],self.ghist[0:self.iter]))
+            else:
+                train_x=np.hstack((self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
+                train_f=np.hstack((self.fhist[-self.Window:],self.ghist[-self.Window:]))
         else:
-            train_x=np.hstack((self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
-            train_f=np.hstack((self.fhist[-self.Window:],self.ghist[-self.Window:]))
+            if self.Window is None:
+                train_x=np.hstack((self.x_noise,self.xhist[:,1:self.iter+1],self.yhist[:,0:self.iter]))
+                train_f=np.hstack((self.f_noise,self.fhist[1:self.iter+1],self.ghist[0:self.iter]))
+            else:
+                train_x=np.hstack((self.x_noise,self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
+                train_f=np.hstack((self.f_noise,self.fhist[-self.Window:],self.ghist[-self.Window:]))            
+        
         if self.verbose:
             print('Computing Active Subspace after ',self.iter,' steps')
             print('Training Data Size',train_x.shape)
@@ -265,7 +275,7 @@ class Stars_sim:
             C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
         
-        print('Condition number',gquad.cond)
+        #print('Condition number',gquad.cond)
         print('Rsqr',gquad.Rsqr)
         adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:

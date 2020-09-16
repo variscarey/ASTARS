@@ -12,11 +12,12 @@ from astars.stars_sim import Stars_sim
 import timeit
 
 
-adim =10
-dim = 50
+
+adim =2
+dim = 30
 
 
-def nesterov_2_f(x,sig=1E-3):
+def nesterov_2_f(x,sig=1E-5):
     ans = 0.5*(x[0]**2 + x[adim-1]**2) - x[0]
     for i in range(adim-1):
         ans += 0.5*(x[i] - x[i+1])**2
@@ -27,22 +28,22 @@ init_pt = np.random.randn(dim)
 
 print(nesterov_2_f(init_pt))
 
-ntrials = 1
-maxit = 2500
+ntrials = 100
+maxit = 5000
 
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-10, verbose = False, maxit = maxit)
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
     # do 100 steps
     while test.iter < test.maxit:
         test.step()
-        if test.iter % 100 == 0:
-            print('iter',test.iter,test.fhist[test.iter])
+        #if test.iter % 100 == 0:
+            #print('iter',test.iter,test.fhist[test.iter])
     
     #update average of f
     f_avr += test.fhist  
@@ -54,20 +55,22 @@ start = timeit.default_timer()
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-4, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-10, verbose = True, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
-    test.train_method = 'GQ'
-    test.adapt = 500 #ts number of sub-cylcing steps
+    test.get_h()
+    test.regul = 1E-10
+    test.train_method = 'QPHD'
+    test.adapt = 25 # Sets number of sub-cylcing steps
 
     
     # do 100 steps
     while test.iter < test.maxit:
         test.step()    
-        if test.iter % 100 == 0:
-            print('iter',test.iter,test.fhist[test.iter])
+        #if test.iter % 100 == 0:
+         #   print('iter',test.iter,test.fhist[test.iter])
     f2_avr += test.fhist
-    print('trial',trial,' minval',test.fhist[-1])
+    #print('trial',trial,' minval',test.fhist[-1])
 
 # Stop the clock!
 stop = timeit.default_timer()
