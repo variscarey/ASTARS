@@ -152,7 +152,7 @@ def ECNoise(f,x_b,h=1E-2,M=3,mult_flag=False):
 
 
 
-def get_L1(xdata,fdata,var,degree = 3, plot = True):
+def get_L1(xdata,fdata,var,degree = 3, plot = False):
     ''' 
     computes approximate L1 Lipschitz constant by using 1D polynomial
     '''

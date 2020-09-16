@@ -68,16 +68,14 @@ class Stars_sim:
                 elif temp == -2:
                     h *= 100   
                     
-
-        if self.L1 is None:
-            if self.verbose is True:
-                print('Determining initial L1 from ECNoise Data')
+        print('Input L1',L1,'Input Variance',var)
+        if L1 is None and var is None:
+            print('Determining initial L1 from ECNoise Data')
   
             x_1d=h*np.arange(0,self.x_noise.shape[1])
             self.L1=get_L1(x_1d,self.f_noise,self.var)
-            
-            if self.verbose is True:
-                print('Approximate value of L1=',self.L1)
+        
+            print('Approximate value of L1=',self.L1)
         self.xhist[:,0] = self.x
         self.fhist[0] = self.f(self.x)
         self.sigma = np.sqrt(self.var)
