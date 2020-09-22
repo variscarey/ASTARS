@@ -13,11 +13,11 @@ import timeit
 
 
 
-adim =2
-dim = 30
+adim = 10
+dim = 50
 
 
-def nesterov_2_f(x,sig=1E-5):
+def nesterov_2_f(x,sig=1E-6):
     ans = 0.5*(x[0]**2 + x[adim-1]**2) - x[0]
     for i in range(adim-1):
         ans += 0.5*(x[i] - x[i+1])**2
@@ -28,14 +28,14 @@ init_pt = np.random.randn(dim)
 
 print(nesterov_2_f(init_pt))
 
-ntrials = 100
-maxit = 5000
+ntrials = 10
+maxit = 10000
 
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-10, verbose = False, maxit = maxit)
+    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-12, verbose = False, maxit = maxit)
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
@@ -55,13 +55,14 @@ start = timeit.default_timer()
 
 for trial in range(ntrials):
     #sim setup
-    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-10, verbose = True, maxit = maxit)
+    test = Stars_sim(nesterov_2_f, init_pt, L1 = 4, var = 1E-12, verbose = True, maxit = maxit)
     #test.STARS_only = True
     test.get_mu_star()
     test.get_h()
-    test.regul = 1E-10
-    test.train_method = 'QPHD'
-    test.adapt = 25 # Sets number of sub-cylcing steps
+    test.regul = None
+    test.train_method = 'GQ'
+    test.adapt = 100 # Sets number of sub-cylcing steps
+    test.threshold = 0.99999
 
     
     # do 100 steps
