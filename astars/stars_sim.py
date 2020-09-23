@@ -28,6 +28,7 @@ class Stars_sim:
         #default internal settings, can be modified.
         self.update_L1 = False
         self.active = None
+        self.adim = None ###
         self.iter = 0
         self.Window = None  #integer, window size for surrogate construction
         self.debug = False
@@ -275,11 +276,11 @@ class Stars_sim:
         
         #print('Condition number',gquad.cond)
         print('Rsqr',gquad.Rsqr)
-        adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
+        self.adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:
-            print('Subspace Dimension',adim)
-            print(ss.eigenvals[0:adim])
-            print('Subspace',ss.eigenvecs[:,0:adim])
+            print('Subspace Dimension',self.adim)
+            print(ss.eigenvals[0:self.adim])
+            print('Subspace',ss.eigenvecs[:,0:self.adim])
         #if self.update_L1 is True and self.train_method != 'LL':
         #    if self.train_method == 'GQ':
         #        d2f = gquad.comp_hessian(train_x)
@@ -299,7 +300,7 @@ class Stars_sim:
         scale = (ub-lb)/2.0
         #if self.debug is True:
         #   print('scale',scale)
-        self.active=ss.eigenvecs[:,0:adim]
+        self.active=ss.eigenvecs[:,0:self.adim]
  
         self.wts=ss.eigenvals
         ##update ASTARS parameters
