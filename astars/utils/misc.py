@@ -19,7 +19,8 @@ def find_active(eigval,eigvec,threshold = .95, verbose = False):
     target = threshold * np.sum(eigval)
     svar=0
     adim=0
-    while svar < target:
+    dim=np.size(eigval)
+    while svar < target and adim<dim:
         svar += eigval[adim]
         adim+=1
     print ('Subspace Dimension', adim)

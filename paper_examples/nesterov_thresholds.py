@@ -16,7 +16,7 @@ from astars.utils.misc import subspace_dist, find_active
 
 class nesterov:
     
-    def __init__(self, dim = 10, sig = 1E-16):
+    def __init__(self, dim = 10, sig = 1E-19):
         self.dim = dim
         self.sig = sig
         self.L1 = 2**9
@@ -36,10 +36,10 @@ class nesterov:
         
 f = nesterov()
 
-this_init_pt = 0.1*np.random.randn(f.dim)
+this_init_pt = np.random.randn(f.dim)
 
-ntrials = 1
-maxit = 35000
+ntrials = 25
+maxit = 7500
 
 dim = f.dim
 
@@ -49,10 +49,10 @@ sub_sp = ss.subspaces.Subspaces()
 train_size = 500*(dim+2)*(dim+1)//2
 print(train_size)
 
-train_set = np.random.rand(train_size,dim)
+train_set = 2*np.random.rand(train_size,dim)-1
 for loop in range(2):
     if loop != 0: #append new data
-        new_pts = np.random.rand(train_size,dim)
+        new_pts = 2*np.random.rand(train_size,dim)-1
         train_set = np.vstack((train_set,new_pts))
         print('training data size',train_set.shape)
     #train active subspace
@@ -64,11 +64,14 @@ for loop in range(2):
     adim = find_active(sub_sp.eigenvals,sub_sp.eigenvecs)
     print(adim)
     print(sub_sp.eigenvals)
+    print(sub_sp.eigenvecs)
     #print('Subspace Distance',subspace_dist(true_as,sub_sp.eigenvecs[:,0:adim]))
     
 thresh = sub_sp.eigenvals
 tsum = np.sum(thresh)
-thresholds = [1-thresh[9]/tsum,1-np.sum(thresh[8:9])/tsum, 1-np.sum(thresh[7:9])/tsum, 1-np.sum(thresh[6:9])/tsum, 1-np.sum(thresh[5:9])/tsum, 1-np.sum(thresh[4:9])/tsum, 1-np.sum(thresh[3:9])/tsum, 1-np.sum(thresh[2:9])/tsum]
+print(tsum)
+print(thresh[9]/tsum)
+thresholds = [1, 1-thresh[9]/tsum,1-np.sum(thresh[8:9])/tsum, 1-np.sum(thresh[7:9])/tsum, 1-np.sum(thresh[6:9])/tsum, 1-np.sum(thresh[5:9])/tsum, 1-np.sum(thresh[4:9])/tsum, 1-np.sum(thresh[3:9])/tsum, 1-np.sum(thresh[2:9])/tsum]
 
 f_avr = np.zeros(maxit+1)
 f2_avr = np.zeros((maxit+1,np.size(thresholds)))
@@ -100,7 +103,7 @@ for i in range(np.size(thresholds)):
         test.get_h()
         test.train_method = 'GQ'
         #test.adapt = 3.0*f.dim # Sets number of sub-cylcing steps
-        test.adapt = 10
+        test.adapt = 25
         test.regul = None #test.sigma
         test.threshold = thresholds[i]
 	# do steps
