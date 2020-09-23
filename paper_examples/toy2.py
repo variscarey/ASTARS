@@ -20,28 +20,28 @@ dim = 10
 weights=np.ones(dim)
 true_as = weights / np.linalg.norm(weights)
 
-our_sig=1E-3
+our_sig=1E-6
 our_var=our_sig**2
 
 def toy_f(x,sig=our_sig):
     return mag*(np.dot(weights,x))**2 + sig*np.random.randn(1)
 
-    
+our_L1 = 2.0*mag*dim
 
 
 
-init_pt = 10*np.random.randn(dim)
-ntrials = 200
+init_pt = np.random.randn(dim)
+ntrials = 500
 maxit = 200
 
 f_avr = np.zeros(maxit+1)  #set equal to number of iterations + 1
 
 for trial in range(ntrials):
     #sim setup
-
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0*mag*dim, var = None, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = our_L1, var = our_var, verbose = False, maxit = maxit)
 
     test.STARS_only = True
+    test.update_L1 = True
     test.get_mu_star()
     test.get_h()
     # do 100 steps
@@ -56,9 +56,10 @@ f2_avr = np.zeros(maxit+1)
 for trial in range(ntrials):
     #sim setup
 
-    test = Stars_sim(toy_f, init_pt, L1 = 2.0*mag*dim, var = None, verbose = False, maxit = maxit)
+    test = Stars_sim(toy_f, init_pt, L1 = our_L1, var = our_var, verbose = False, maxit = maxit)
 
     #test.STARS_only = True
+    test.update_L1 = True
     test.get_mu_star()
     test.get_h()
     # adapt every 10 timesteps using quadratic(after inital burn)

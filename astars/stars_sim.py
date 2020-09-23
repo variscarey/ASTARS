@@ -28,6 +28,7 @@ class Stars_sim:
         #default internal settings, can be modified.
         self.update_L1 = False
         self.active = None
+        self.adim = None ###
         self.iter = 0
         self.Window = None  #integer, window size for surrogate construction
         self.debug = False
@@ -275,34 +276,19 @@ class Stars_sim:
         
         #print('Condition number',gquad.cond)
         print('Rsqr',gquad.Rsqr)
-        adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
+        self.adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
         if self.verbose or self.debug:
-            print('Subspace Dimension',adim)
-            print(ss.eigenvals[0:adim])
-            print('Subspace',ss.eigenvecs[:,0:adim])
+            print('Subspace Dimension',self.adim)
+            print(ss.eigenvals[0:self.adim])
+            print('Subspace',ss.eigenvecs[:,0:self.adim])
         if self.update_L1 is True and self.train_method == 'GQ':
             mapH = D @ gquad.H @ D
             #print('H shape',gquad.H.shape)
             sur_L1 = (np.linalg.eigh(mapH)[0])[-1]
             print('L1 from surrogate',sur_L1)
             self.L1 = sur_L1
-        #        temp = np.abs(d2f[0,:,:])
-        #        print('|Hessian| on mapped domain',temp)
-        #        scale = .5*(ub-lb)
-        #        if self.debug is True:
-        #            print('Variable Scalings',scale)
-        #            scale = scale @ scale.T
 
-                
-                #sufficient for quadratic response surface
-        #        self.L1 = np.amax(temp/scale)
-        #        if self.verbose:
-        #            print('Updated L1 to',self.L1)
-            #if self.train_method = None and rbf.N >= 2:
-        #scale = (ub-lb)/2.0
-        #if self.debug is True:
-        #   print('scale',scale)
-        self.active=ss.eigenvecs[:,0:adim]
+        self.active=ss.eigenvecs[:,0:self.adim]
  
         self.wts=ss.eigenvals
         ##update ASTARS parameters

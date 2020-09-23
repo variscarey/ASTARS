@@ -16,7 +16,7 @@ from astars.utils.misc import subspace_dist, find_active
 
 class new_test:
     
-    def __init__(self, dim = 10, sig = 1E-2):
+    def __init__(self, dim = 10, sig = 1E-5):
         self.dim = dim
         self.sig = sig
         self.L1 = 2.0
@@ -40,8 +40,8 @@ f = new_test()
 K = [1,0.1,0.2,4]
 this_init_pt = 10*np.random.randn(f.dim)
 
-ntrials = 10
-maxit = 200
+ntrials = 100
+maxit = 2000
 
 f_avr = np.zeros((maxit+1,np.size(K)))
 
@@ -87,7 +87,7 @@ print(f_avr)
 
 
 for i in range(np.size(K)):
-    plt.semilogy(np.abs(f_avr[:,i]-f.fstar), label='STARS, L1 scaled by '+str(K[i]))
+    plt.semilogy(np.abs(f_avr[:,i]-f.fstar), label='STARS, $K_1=$ '+str(K[i]))
 
 
 
