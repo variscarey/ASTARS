@@ -8,6 +8,7 @@ Created on Mon Jun  8 15:06:33 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 import active_subspaces as ss   
 from astars.stars_sim import Stars_sim
@@ -95,9 +96,10 @@ nest = nesterov_2_f()
 for f in {toy2f}:
     print('RUNNING PROBLEM ',f.name)
     dim = f.dim
-    init_pt = np.random.randn(dim)
-    ntrials = 100
-    maxit = 2*dim**2
+    init_pt = 1000*np.random.randn(dim)
+    ntrials = 10
+    tr_stop = (dim+2)*(dim+1)//2
+    maxit = 3*tr_stop
     #maxit = 1000
     f2_avr = np.zeros(maxit+1)
     f_avr = np.zeros(maxit+1)
@@ -110,36 +112,49 @@ for f in {toy2f}:
         test.update_L1 = True
         test.get_mu_star()
         test.get_h()
-    # do 100 steps
+    # do training steps
+        while test.iter < tr_stop:
+            test.step()
+    
+    #update average of f and save for start of astars...?
+        f_avr += test.fhist  
+        learned_L1 = copy.deepcopy(test.L1)
+        learned_var = copy.deepcopy(test.var)
+        last_iterate = copy.deepcopy(test.x)
+        f2_sto = np.zeros(maxit+1)
+        f2_sto = copy.deepcopy(test.fhist)
+        print(f2_sto)
+    # do remaining steps
         while test.iter < test.maxit:
             test.step()
     
-    #update average of f
-        f_avr += test.fhist  
-        print('STARS trial',trial,' minval',test.fhist[-1])
+
+        f_avr += test.fhist         
  
-    for trial in range(ntrials):
-        #sim setup
-        test = Stars_sim(f, init_pt, L1 = None, var = None, verbose = False, maxit = maxit)
-        print('Inital L1',test.L1)
-        print('Inital var',test.var)
-        test.get_mu_star()
-        test.get_h()
-        test.update_L1 = True
+
+    #sim setup for astars
+        test2 = Stars_sim(f, last_iterate, L1 = learned_L1, var = learned_var, verbose = False, maxit = maxit-tr_stop)
+        print('Inital L1',test2.L1)
+        print('Inital var',test2.var)
+        test2.get_mu_star()
+        test2.get_h()
+        test2.update_L1 = True
         # adapt every 10 timesteps using quadratic(after inital burn)
-        test.train_method = 'GQ'
-        test.adapt = 3*f.dim # Sets number of sub-cylcing steps
+        test2.train_method = 'GQ'
+        test2.adapt = 3*f.dim # Sets number of sub-cylcing steps
         #test.regul *= 100
         #test.debug = True
-        test.regul = None #test.sigma
-        test.threshold = .95
+        test2.regul = None #test.sigma
+        test2.threshold = .95
+        test2.fhist = f2_sto
+        test2.iter = tr_stop+1
         # do 100 steps
-        while test.iter < test.maxit:
-            test.step()  
-            if test.iter % (2*f.dim) == 0 and test.active is not None:
-                print('Step',test.iter,'Active dimension',test.active.shape[1])
-                print('Subspace Distance',subspace_dist(f.true_as,test.active))
-                print('Leading Direction',test.active[:,0])
+        while test2.iter < test2.maxit:
+            test2.step()  
+            if test2.iter % (2*f.dim) == 0 and test2.active is not None:
+                print('Step',test2.iter,'Active dimension',test2.active.shape[1])
+                print('Subspace Distance',subspace_dist(f.true_as,test2.active))
+                print('Leading Direction',test2.active[:,0])
             # Normalization test
             #sub_sp = ss.subspaces.Subspaces()
             #train_x=np.hstack((test.xhist[:,0:test.iter+1],test.yhist[:,0:test.iter]))
@@ -148,9 +163,12 @@ for f in {toy2f}:
             #usual threshold
             #adim = find_active(sub_sp.eigenvals,sub_sp.eigenvecs)
             #print('Subspace Distance, no scaling, raw call',subspace_dist(true_as,sub_sp.eigenvecs[:,0:adim]))
-        f2_avr += test.fhist
-        print('ASTARS trial',trial,' minval',test.fhist[-1])
-        print('Leading Active Variable',test.active[:,0])
+        f2_avr += test2.fhist
+        
+        print(f2_avr)
+        
+        print('ASTARS trial',trial,' minval',test2.fhist[-1])
+        print('Leading Active Variable',test2.active[:,0])
     
     
 
@@ -159,7 +177,7 @@ for f in {toy2f}:
  
     plt.semilogy(np.abs(f_avr-f.fstar),label='Stars')
     plt.semilogy(np.abs(f2_avr-f.fstar), label='Astars')
-    plt.axvline((f.dim+1)*(f.dim+2)//4)
+    plt.axvline(tr_stop)
     plt.title(f.name)
     plt.legend()
     plt.show()
