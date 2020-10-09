@@ -19,12 +19,15 @@ class toy2:
                 self.dim = dim
                 self.L1 = self.mag*self.dim*2.0
                 self.sig = sig
+                
                 self.var = self.sig**2
                 self.name = 'Toy 2'
                 self.fstar = 0
                 if weights is None:
                     self.weights = np.ones(self.dim)
- 
+                self.active = self.weights / np.linalg.norm(self.weights)
+                self.active = self.active.reshape(-1,1)
+            
    
         def __call__(self, x):
             return self.mag*(np.dot(self.weights,x)**2) + self.sig*np.random.randn(1)
@@ -80,18 +83,48 @@ class nesterov_2_f:
 
 
 
-
+#plotting parameters and definitions
 toy2f = toy2()
 sph = sphere()
 nest = nesterov_2_f()
 
-for f in {nest}:
-#for f in {toy2f,sph}:
+
+params = {'legend.fontsize': 40,'legend.handlelength': 3}
+plt.rcParams["figure.figsize"] = (30,20)
+plt.rcParams['figure.dpi'] = 80
+plt.rcParams['savefig.dpi'] = 100
+plt.rcParams['font.size'] = 60
+plt.rcParams['figure.titlesize'] = 'xx-large'
+plt.rcParams.update(params)
+
+stars_full, sf_ls = 'red', '--'
+active_stars_learned, lr_ls = 'black', '-.'
+active_stars_ref, rf_ls = 'blue', ':'
+
+#alpha=0.3  (for multiple trial plotting)
+
+
+#plt.semilogy(FHIST1[0:maxit,j], lw=5, alpha=alpha,color=stars_full, ls=sf_ls)
+#plt.semilogy(FHIST2[0:maxit,j], lw=5, alpha=alpha,color=active_stars_ref ,ls=rf_ls)
+#plt.semilogy(FHIST3[0:maxit,j], lw=5, alpha=alpha,color=active_stars_learned ,ls=lr_ls)
+#    plt.semilogy(FHIST1[0:maxit,j], lw=5, alpha=alpha,color=stars_full,ls=sf_ls, label='STARS, full vars with learned hyperparams')
+#    plt.semilogy(FHIST2[0:maxit,j], lw=5, alpha=alpha,color=active_stars_ref ,ls=rf_ls,  label='Active STARS, true active vars with learned hyperparams')
+#    plt.semilogy(FHIST3[0:maxit,j], lw=5, alpha=alpha,color=active_stars_learned ,ls=lr_ls,  label='Active STARS, learned active vars with learned hyperparams')
+#    plt.xlabel('$k$, iteration count')
+#    plt.ylabel('$f(\lambda^{(k)})$')
+#    title_string_1 = 'Example:'
+#   title_string_1 = title_string_1 + ex_num
+#    title_string_1 = title_string_1 + 'STARS and ASTARS Convergence Sensitivity Analysis'
+#    plt.title(title_string_1)
+
+#for f in {nest}:
+for f in {toy2f}: #,sph}:
     dim = f.dim
     init_pt = np.random.randn(dim)
-    ntrials = 1
+    ntrials = 100
     maxit = 3*dim**2
     #maxit = 1000
+    f3_avr = np.zeros(maxit+1)
     f2_avr = np.zeros(maxit+1)
     f_avr = np.zeros(maxit+1)
     for trial in range(ntrials):
@@ -138,14 +171,31 @@ for f in {nest}:
         print('ASTARS trial',trial,' minval',test.fhist[-1])
     
     
+    for trial in range(ntrials):
+        
+        test = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit)
+        test.active = f.active
+        test.get_mu_star()
+        test.get_h()
+        test.adapt = 0
+    # do 100 steps
+        while test.iter < test.maxit:
+            test.step()
     
-
+    #update average of f
+        f3_avr += test.fhist  
+        print('True ASTARS trial',trial,' minval',test.fhist[-1])
+        
     f_avr /= ntrials
     f2_avr /= ntrials
+    f3_avr /= ntrials
  
-    plt.semilogy(np.abs(f_avr-f.fstar),label='Stars')
-    plt.semilogy(np.abs(f2_avr-f.fstar), label='Astars')
+    plt.semilogy(np.abs(f_avr-f.fstar),lw = 5,label='Stars',color=stars_full, ls=sf_ls)
+    plt.semilogy(np.abs(f2_avr-f.fstar), lw = 5, label='Astars',color=active_stars_learned ,ls=lr_ls)
+    plt.semilogy(np.abs(f3_avr-f.fstar), lw = 5,label = 'Astars, true subspace',color=active_stars_ref ,ls=rf_ls)
     plt.title(f.name)
+    plt.xlabel('$k$, iteration count')
+    plt.ylabel('$|f(\lambda^{(k)})-f_*|$')
     plt.legend()
     plt.show()
 
