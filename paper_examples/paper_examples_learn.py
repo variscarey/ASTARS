@@ -117,56 +117,28 @@ for f in {toy2f}:
             test.step()
     
     #update average of f and save for start of astars...?
-        f_avr += test.fhist  
-        learned_L1 = copy.deepcopy(test.L1)
-        learned_var = copy.deepcopy(test.var)
-        last_iterate = copy.deepcopy(test.x)
-        f2_sto = np.zeros(maxit+1)
-        f2_sto = copy.deepcopy(test.fhist)
-        print(f2_sto)
-    # do remaining steps
-        while test.iter < test.maxit:
-            test.step()
-    
-
-        f_avr += test.fhist         
- 
-
-    #sim setup for astars
-        test2 = Stars_sim(f, last_iterate, L1 = learned_L1, var = learned_var, verbose = False, maxit = maxit-tr_stop)
-        print('Inital L1',test2.L1)
-        print('Inital var',test2.var)
-        test2.get_mu_star()
-        test2.get_h()
-        test2.update_L1 = True
-        # adapt every 10 timesteps using quadratic(after inital burn)
+        
+        test2 = copy.deepcopy(test)
+        test2.STARS_only = False
         test2.train_method = 'GQ'
         test2.adapt = 3*f.dim # Sets number of sub-cylcing steps
         #test.regul *= 100
         #test.debug = True
         test2.regul = None #test.sigma
         test2.threshold = .95
-        test2.fhist = f2_sto
-        test2.iter = tr_stop+1
-        # do 100 steps
-        while test2.iter < test2.maxit:
-            test2.step()  
-            if test2.iter % (2*f.dim) == 0 and test2.active is not None:
-                print('Step',test2.iter,'Active dimension',test2.active.shape[1])
-                print('Subspace Distance',subspace_dist(f.true_as,test2.active))
-                print('Leading Direction',test2.active[:,0])
-            # Normalization test
-            #sub_sp = ss.subspaces.Subspaces()
-            #train_x=np.hstack((test.xhist[:,0:test.iter+1],test.yhist[:,0:test.iter]))
-            #train_f=np.hstack((test.fhist[0:test.iter+1],test.ghist[0:test.iter]))
-            #sub_sp.compute(X=train_x.T,f=train_f,sstype='QPHD')
-            #usual threshold
-            #adim = find_active(sub_sp.eigenvals,sub_sp.eigenvecs)
-            #print('Subspace Distance, no scaling, raw call',subspace_dist(true_as,sub_sp.eigenvecs[:,0:adim]))
+        
+        while test.iter < test.maxit:
+            test.step()
+            test2.step()
+    
+
+        f_avr += test.fhist         
         f2_avr += test2.fhist
+
+   
         
         print(f2_avr)
-        
+        print('STARS trial',trial,' minval',test.fhist[-1])
         print('ASTARS trial',trial,' minval',test2.fhist[-1])
         print('Leading Active Variable',test2.active[:,0])
     

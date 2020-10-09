@@ -69,16 +69,14 @@ class Stars_sim:
                 elif temp == -2:
                     h *= 100   
                     
-
-        if self.L1 is None:
-            if self.verbose is True:
-                print('Determining initial L1 from ECNoise Data')
+        print('Input L1',L1,'Input Variance',var)
+        if L1 is None and var is None:
+            print('Determining initial L1 from ECNoise Data')
   
             x_1d=h*np.arange(0,self.x_noise.shape[1])
             self.L1=get_L1(x_1d,self.f_noise,self.var)
-            
-            if self.verbose is True:
-                print('Approximate value of L1=',self.L1)
+        
+            print('Approximate value of L1=',self.L1)
         self.xhist[:,0] = self.x
         self.fhist[0] = self.f(self.x)
         self.sigma = np.sqrt(self.var)
@@ -283,25 +281,13 @@ class Stars_sim:
             print('Subspace Dimension',self.adim)
             print(ss.eigenvals[0:self.adim])
             print('Subspace',ss.eigenvecs[:,0:self.adim])
-        #if self.update_L1 is True and self.train_method != 'LL':
-        #    if self.train_method == 'GQ':
-        #        d2f = gquad.comp_hessian(train_x)
-        #        temp = np.abs(d2f[0,:,:])
-        #        print('|Hessian| on mapped domain',temp)
-        #        scale = .5*(ub-lb)
-        #        if self.debug is True:
-        #            print('Variable Scalings',scale)
-        #            scale = scale @ scale.T
+        if self.update_L1 is True and self.train_method == 'GQ':
+            mapH = D @ gquad.H @ D
+            #print('H shape',gquad.H.shape)
+            sur_L1 = (np.linalg.eigh(mapH)[0])[-1]
+            print('L1 from surrogate',sur_L1)
+            self.L1 = sur_L1
 
-                
-                #sufficient for quadratic response surface
-        #        self.L1 = np.amax(temp/scale)
-        #        if self.verbose:
-        #            print('Updated L1 to',self.L1)
-            #if self.train_method = None and rbf.N >= 2:
-        scale = (ub-lb)/2.0
-        #if self.debug is True:
-        #   print('scale',scale)
         self.active=ss.eigenvecs[:,0:self.adim]
  
         self.wts=ss.eigenvals
