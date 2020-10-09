@@ -24,6 +24,7 @@ class Stars_sim:
         self.maxit = maxit
         self.STARS_only = False
         self.train_method = train_method
+        self.set_dim = False
         
         #default internal settings, can be modified.
         self.update_L1 = False
@@ -155,7 +156,7 @@ class Stars_sim:
         self.yhist[:,self.iter-1]=y
         self.ghist[self.iter-1]=g
     
-        if self.update_L1 is True and self.mult is False:
+        if self.update_L1 is True and self.active is None and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
             #not implemented for multiplicative noise yet 
             #1Dx data
@@ -276,7 +277,10 @@ class Stars_sim:
         
         #print('Condition number',gquad.cond)
         print('Rsqr',gquad.Rsqr)
-        self.adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
+        if self.set_dim = False:
+            self.adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
+    
+            
         if self.verbose or self.debug:
             print('Subspace Dimension',self.adim)
             print(ss.eigenvals[0:self.adim])

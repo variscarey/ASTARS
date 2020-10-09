@@ -15,7 +15,7 @@ from astars.stars_sim import Stars_sim
 from astars.utils.misc import subspace_dist, find_active
 
 class toy2:
-        def __init__(self, mag = 1.0, dim = 20, weights = None, sig = 1E-6):
+        def __init__(self, mag = 1.0, dim = 20, weights = None, sig = 1E-3):
                 self.mag = mag
                 self.dim = dim
                 self.L1 = self.mag*self.dim*2.0
@@ -93,10 +93,10 @@ nest = nesterov_2_f()
 
 
 #for f in {nest}:
-for f in {toy2f}:
+for f in {toy2f,sph}:
     print('RUNNING PROBLEM ',f.name)
     dim = f.dim
-    init_pt = 1000*np.random.randn(dim)
+    init_pt = 10*np.random.randn(dim)
     ntrials = 10
     tr_stop = (dim+2)*(dim+1)//2
     maxit = 3*tr_stop

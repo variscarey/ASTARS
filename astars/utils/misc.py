@@ -15,7 +15,10 @@ def subspace_dist(obasis,obasis2):
     d=np.maximum(obasis.shape[1],obasis2.shape[1])
     return np.sqrt(d-np.sum(obasis.T@obasis2)**2)
 
-def find_active(eigval,eigvec,threshold = .95, verbose = False):
+def find_active(eigval,eigvec,threshold = .95, verbose = False, dimensions = None):
+    
+    
+    
     target = threshold * np.sum(eigval)
     svar=0
     adim=0
@@ -29,3 +32,4 @@ def find_active(eigval,eigvec,threshold = .95, verbose = False):
         print('Subspace',eigvec[:,0:adim])
 
     return adim 
+    
