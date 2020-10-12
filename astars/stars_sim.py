@@ -4,7 +4,7 @@ print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file_
 
 from .utils.stars_param import get_L1,ECNoise
 from .utils.surrogates import train_rbf
-from .utils.misc import find_active
+from .utils.misc import find_active, subspace_dist
 
 import numpy as np
 import active_subspaces as ac
@@ -12,7 +12,7 @@ import active_subspaces as ac
 
 class Stars_sim:
     
-    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100,train_method=None): 
+    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100,train_method=None,true_as=None): 
 
         #constructor input processing
         self.f = f
@@ -30,6 +30,7 @@ class Stars_sim:
         self.update_L1 = False
         self.active = None
         self.adim = None ###
+        self.true_as = true_as
         self.iter = 0
         self.Window = None  #integer, window size for surrogate construction
         self.debug = False
@@ -47,6 +48,12 @@ class Stars_sim:
         self.fhist = np.zeros(self.maxit+1)
         self.ghist = np.zeros(self.maxit)
         self.yhist = np.zeros((self.dim,self.maxit))
+        
+        self.tr_stop = int(np.ceil((self.dim + 1) * (self.dim + 2) / 2)) # for quads only!
+        if self.maxit > self.tr_stop:
+            self.adim_hist = np.zeros(self.maxit-self.tr_stop-1)
+            if self.true_as is not None:
+                self.sub_dist_hist = np.zeros(self.maxit-self.tr_stop-1)
 
         if self.var is None:
             h=0.1
@@ -140,6 +147,11 @@ class Stars_sim:
             if self.debug is True:
                 print('Iteration',self.iter,'Oracle step=',u,)
             #print(u.shape)
+            if self.maxit > self.tr_stop and self.iter > self.tr_stop:
+                self.adim_hist[self.iter-self.tr_stop-1] = act_dim
+                if self.true_as is not None:
+                    self.sub_dist_hist[self.iter-self.tr_stop-1] = subspace_dist(self.true_as,self.active)
+            
     
         # Form vector y, which is a random walk away from x_init
         y = self.x + mu_star*u
