@@ -24,7 +24,8 @@ setup(name='ASTARS',
       install_requires=[
           'numpy',
           'scipy >= 0.15.0',
-          'matplotlib'
+          'matplotlib',
+          'pandas'
       ],
       #test_suite='nose.collector',
       #tests_require=['nose'],

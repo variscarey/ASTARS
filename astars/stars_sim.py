@@ -277,7 +277,7 @@ class Stars_sim:
         
         #print('Condition number',gquad.cond)
         print('Rsqr',gquad.Rsqr)
-        if self.set_dim = False:
+        if self.set_dim == False:
             self.adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
     
             
