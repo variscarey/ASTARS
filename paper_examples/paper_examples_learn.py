@@ -68,7 +68,7 @@ class sphere:
               self.threshold = 0.9995
             
         def __call__(self,X):
-            return np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
+            return mag*np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
  
 class nesterov_2_f:
     
@@ -118,7 +118,7 @@ for f in {sph, toy2f}:
     dim = f.dim
     np.random.seed(9)
     init_pt = 10*np.random.randn(dim) #  works for toy2 and active sphere
-    ntrials = 5 #250
+    ntrials = 50 #250
     tr_stop = (dim+2)*(dim+1)//2
     maxit = f.maxit
 
