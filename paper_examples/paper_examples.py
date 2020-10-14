@@ -38,7 +38,7 @@ class toy2:
                 self.active = self.active.reshape(-1,1)
                 
                 self.maxit = 2*dim**2
-                self.ntrials = 1 # 1000
+                self.ntrials = 1000
                 self.adapt = 2*dim
                 self.regul = None
                 self.threshold = 0.99
@@ -66,7 +66,7 @@ class sphere:
               self.fstar = 0
               
               self.maxit = 10*dim**2
-              self.ntrials = 1 # 100
+              self.ntrials = 100
               self.adapt = dim
               self.regul = self.sig**2
               self.threshold = 0.999
@@ -89,7 +89,7 @@ class nesterov_2_f:
         self.fstar = .5*(-1 + 1 / (self.adim + 1))
         
         self.maxit = 3*dim**2
-        self.ntrials = 1 # 50
+        self.ntrials = 50
         self.adapt = 2*dim
         self.regul = self.sig**2
         self.threshold = 0.9999
@@ -130,7 +130,7 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {toy2f}:
+for f in {nest}:
 #for f in {toy2f, sph, nest}:
     dim = f.dim
     np.random.seed(9)

@@ -21,7 +21,7 @@ class nesterov:
         self.sig = sig
         self.L1 = 2**9
         self.var = self.sig**2
-        self.name = 'Nesterov'
+        self.name = 'Example 5: STARS vs FAASTARS Convergence with Various Fixed $j=\dim \mathcal{A}$ '
         self.fstar = 0
     
     def __call__(self,x):
@@ -36,10 +36,20 @@ class nesterov:
         
 f = nesterov()
 
+params = {'legend.fontsize': 28,'legend.handlelength': 3}
+plt.rcParams["figure.figsize"] = (60,40)
+plt.rcParams['figure.dpi'] = 80
+plt.rcParams['savefig.dpi'] = 100
+plt.rcParams['font.size'] = 30
+plt.rcParams['figure.titlesize'] = 'xx-large'
+plt.rcParams.update(params)
+
+
+np.random.seed(9)
 this_init_pt = np.random.randn(f.dim)
 
-ntrials = 20
-maxit = 1000
+ntrials = 25
+maxit = 5000
 
 dim = f.dim
 
@@ -64,7 +74,7 @@ for trial in range(ntrials):
     f_avr += test.fhist
     print('STARS trial',trial,' minval',test.fhist[-1])
     
-a_dims = [1,2,4,8]
+a_dims = [2,4,8]
 n_a_dims = np.size(a_dims)
 f2_avr = np.zeros((maxit+1,n_a_dims))
 j=0
@@ -77,9 +87,8 @@ for i in a_dims:
         test.set_dim = True
         test.adim = i # hard-code adim
         test.train_method = 'GQ'
-        #test.adapt = 3.0*f.dim # Sets number of sub-cylcing steps
-        test.adapt = 25
-        test.regul = None #test.sigma
+        test.adapt = 3.0*f.dim
+        test.regul = test.sigma**2
 
 	# do steps
         while test.iter < test.maxit:
@@ -106,9 +115,13 @@ f2_avr /= ntrials
 
 print(f_avr)
 print(f2_avr)
-plt.semilogy(np.abs(f_avr-f.fstar),label='STARS')
+plt.semilogy(np.abs(f_avr-f.fstar),lw = 5, label='STARS', color='black')
+
+color_pal = ['blue', 'red', 'yellow']
+ls_pal = [':','--','-.']
+
 for i in range(0,n_a_dims):
-    plt.semilogy(np.abs(f2_avr[:,i]-f.fstar), label='ASTARS, fixed j='+str(a_dims[i]))
+    plt.semilogy(np.abs(f2_avr[:,i]-f.fstar), lw = 5, label = 'FAASTARS, fixed j='+str(a_dims[i]), ls= ls_pal[i], color = color_pal[i])
 
 plt.title(f.name)
 plt.legend()

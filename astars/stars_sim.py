@@ -48,6 +48,7 @@ class Stars_sim:
         self.fhist = np.zeros(self.maxit+1)
         self.ghist = np.zeros(self.maxit)
         self.yhist = np.zeros((self.dim,self.maxit))
+        self.L1_hist = np.zeros(self.maxit+1)
         
         self.tr_stop = int(np.ceil((self.dim + 1) * (self.dim + 2) / 2)) # for quads only!
         if self.maxit > self.tr_stop:
@@ -167,6 +168,7 @@ class Stars_sim:
         self.fhist[self.iter]=self.f(self.x) #compute new f value
         self.yhist[:,self.iter-1]=y
         self.ghist[self.iter-1]=g
+        self.L1_hist[self.iter-1]=self.L1
     
         if self.update_L1 is True and self.active is None and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
