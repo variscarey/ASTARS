@@ -18,7 +18,7 @@ import pandas as pd
 ###############################################################################
 ############ Set user-desired file path for storing output data!!! ############
 ###############################################################################
-user_file_path = '/home/ccm/Desktop/'
+user_file_path = '.'
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -39,7 +39,7 @@ class toy2:
                     self.weights = weights
                 self.active = self.weights / np.linalg.norm(self.weights)
                 
-                self.maxit = 500
+                self.maxit = 2*dim**2
                 self.threshold = 0.95
                 
    
@@ -118,7 +118,7 @@ for f in {sph, toy2f}:
     dim = f.dim
     np.random.seed(9)
     init_pt = 10*np.random.randn(dim) #  works for toy2 and active sphere
-    ntrials = 250
+    ntrials = 5 #250
     tr_stop = (dim+2)*(dim+1)//2
     maxit = f.maxit
 
@@ -126,18 +126,18 @@ for f in {sph, toy2f}:
     f_avr = np.zeros(maxit+1)
     
     #initialize storage for data dump
-    STARS_f_sto = np.zeros((maxit+1,1))
+    STARS_f_sto = np.zeros((maxit+1,ntrials))
     STARS_x_sto = np.zeros((1,dim))
-    STARS_L1_sto = np.zeros((maxit+1,1))
+    STARS_L1_sto = np.zeros((maxit+1,ntrials))
     STARS_var_sto = np.zeros(ntrials)
     
-    FAASTARS_f_sto = np.zeros((maxit+1,1))
+    FAASTARS_f_sto = np.zeros((maxit+1,ntrials))
     FAASTARS_x_sto = np.zeros((1,dim))
-    FAASTARS_L1_sto = np.zeros((maxit+1,1))
+    FAASTARS_L1_sto = np.zeros((maxit+1,ntrials))
     FAASTARS_var_sto = np.zeros(ntrials)
     if maxit > tr_stop:
-        FAASTARS_adim_sto = np.zeros((maxit-tr_stop-1,1))
-        FAASTARS_sub_dist_sto = np.zeros((maxit-tr_stop-1,1))
+        FAASTARS_adim_sto = np.zeros((maxit-tr_stop-1,ntrials))
+        FAASTARS_sub_dist_sto = np.zeros((maxit-tr_stop-1,ntrials))
     
     
     
@@ -174,17 +174,17 @@ for f in {sph, toy2f}:
         # data dump
         STARS_f_sto = np.hstack((STARS_f_sto, np.transpose([test.fhist])))
         STARS_x_sto = np.vstack((STARS_x_sto,np.transpose(test.xhist)))
-        STARS_L1_sto = np.hstack((STARS_L1_sto, np.transpose([test.L1_hist])))
+        STARS_L1_sto[:,trial] = test.L1_hist
         STARS_var_sto[trial] = test.var
     
         FAASTARS_f_sto = np.hstack((FAASTARS_f_sto, np.transpose([test2.fhist])))
         FAASTARS_x_sto = np.vstack((FAASTARS_x_sto,np.transpose(test2.xhist)))
-        FAASTARS_L1_sto = np.hstack((FAASTARS_L1_sto, np.transpose([test2.L1_hist])))
+        FAASTARS_L1_sto[:,trial] = test2.L1_hist
         FAASTARS_var_sto[trial] = test2.var
         
         if maxit > tr_stop:
-            FAASTARS_adim_sto = np.hstack((FAASTARS_adim_sto, np.transpose([test.adim_hist])))
-            FAASTARS_sub_dist_sto = np.hstack((FAASTARS_sub_dist_sto, np.transpose([test.sub_dist_hist])))
+            FAASTARS_adim_sto[:,trial] = test2.adim_hist
+            FAASTARS_sub_dist_sto[:,trial] = test2.sub_dist_hist
             
             
             
