@@ -21,7 +21,7 @@ class new_test:
         self.sig = sig
         self.L1 = 2.0
         self.var = self.sig**2
-        self.name = 'Example 4: STARS Convergence with Various Scalings $K_1 L_1$'
+        self.name = 'Example 4: STARS Convergence with Various Scalings $c L_1$'
         self.fstar = 0
        
     
@@ -95,16 +95,18 @@ f_avr /= ntrials
 
 print(f_avr)
 
-color_pal = ['blue', 'red', 'yellow']
+color_pal = ['blue', 'red', 'orange']
 ls_pal = [':','--','-.']
 
 for i in range(np.size(K)):
     if i == 0:
-        plt.semilogy(np.abs(f_avr[:,i]-f.fstar), lw = 5,label='STARS, $K_1=$ '+str(K[i]), color='black')
+        plt.semilogy(np.abs(f_avr[:,i]-f.fstar), lw = 5,label='STARS, $c=$ '+str(K[i]), color='black')
     else:
-        plt.semilogy(np.abs(f_avr[:,i]-f.fstar), lw = 5,label='STARS, $K_1=$ '+str(K[i]), color=color_pal[i-1], ls = ls_pal[i-1])
+        plt.semilogy(np.abs(f_avr[:,i]-f.fstar), lw = 5,label='STARS, $c=$ '+str(K[i]), color=color_pal[i-1], ls = ls_pal[i-1])
 
 
 plt.title(f.name)
+plt.xlabel('$k$, iteration count')
+plt.ylabel('$|f(\lambda^{(k)})-f^*|$')
 plt.legend()
 plt.show()

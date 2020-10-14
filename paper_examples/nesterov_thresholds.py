@@ -117,12 +117,14 @@ print(f_avr)
 print(f2_avr)
 plt.semilogy(np.abs(f_avr-f.fstar),lw = 5, label='STARS', color='black')
 
-color_pal = ['blue', 'red', 'yellow']
+color_pal = ['blue', 'red', 'orange']
 ls_pal = [':','--','-.']
 
 for i in range(0,n_a_dims):
     plt.semilogy(np.abs(f2_avr[:,i]-f.fstar), lw = 5, label = 'FAASTARS, fixed j='+str(a_dims[i]), ls= ls_pal[i], color = color_pal[i])
 
 plt.title(f.name)
+plt.xlabel('$k$, iteration count')
+plt.ylabel('$|f(\lambda^{(k)})-f^*|$')
 plt.legend()
 plt.show()

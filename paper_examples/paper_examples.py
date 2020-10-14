@@ -53,7 +53,7 @@ class toy2:
 #sphere function, was toy 1
            
 class sphere:
-        def  __init__(self, mag = 10.0, dim = 20, adim = 10, sig = 1E-3):
+        def  __init__(self, mag = 1.0, dim = 20, adim = 10, sig = 1E-3):
               self.dim = dim
               self.adim = adim
               self.sig = sig
@@ -65,15 +65,15 @@ class sphere:
               self.nickname = 'sphere'
               self.fstar = 0
               
-              self.maxit = 10*dim**2
+              self.maxit = 2*dim**2
               self.ntrials = 100
               self.adapt = dim
               self.regul = self.sig**2
               self.threshold = 0.999
-              self.initscl = 1.0
+              self.initscl = 10.0
             
         def __call__(self,X):
-            return np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
+            return self.mag*np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
  
 class nesterov_2_f:
     
@@ -130,7 +130,7 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {nest}:
+for f in {sph}:
 #for f in {toy2f, sph, nest}:
     dim = f.dim
     np.random.seed(9)

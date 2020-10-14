@@ -229,6 +229,8 @@ for f in {sph, toy2f}:
     plt.semilogy(np.abs(f2_avr-f.fstar), label='FAASTARS', color = 'black', lw = 5, ls = '--')
     #plt.axvline(tr_stop)
     plt.title(f.name)
+    plt.xlabel('$k$, iteration count')
+    plt.ylabel('$|f(\lambda^{(k)})-f^*|$')    
     plt.legend()
     plt.show()
 
