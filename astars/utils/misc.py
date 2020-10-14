@@ -13,7 +13,10 @@ def subspace_dist(obasis,obasis2):
     if obasis2.ndim == 1:
         obasis2=obasis2.reshape(-1,1)
     d=np.maximum(obasis.shape[1],obasis2.shape[1])
-    return np.sqrt(d-np.sum(obasis.T@obasis2)**2)
+    ans = d-np.sum(obasis.T@obasis2)**2
+    ans = np.maximum(0.0,ans)
+    return np.sqrt(ans)
+    
 
 def find_active(eigval,eigvec,threshold = .95, verbose = False, dimensions = None):
     
