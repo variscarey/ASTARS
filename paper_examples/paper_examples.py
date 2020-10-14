@@ -8,10 +8,19 @@ Created on Mon Jun  8 15:06:33 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+import timeit
 import active_subspaces as ss   
 from astars.stars_sim import Stars_sim
 from astars.utils.misc import subspace_dist, find_active
+import pandas as pd
+
+###############################################################################
+############ Set user-desired file path for storing output data!!! ############
+###############################################################################
+user_file_path = '/home/ccm/Desktop/'
+###############################################################################
+###############################################################################
+###############################################################################
 
 class toy2:
         def __init__(self, mag = 1.0, dim = 20, weights = None, sig = 1E-6):
@@ -19,14 +28,21 @@ class toy2:
                 self.dim = dim
                 self.L1 = self.mag*self.dim*2.0
                 self.sig = sig
-                
                 self.var = self.sig**2
-                self.name = 'Toy 2'
+                self.name = 'Example 1: STARS, FAASTARS, and ASTARS Convergence'
+                self.nickname = 'toy_2'
                 self.fstar = 0
                 if weights is None:
                     self.weights = np.ones(self.dim)
                 self.active = self.weights / np.linalg.norm(self.weights)
                 self.active = self.active.reshape(-1,1)
+                
+                self.maxit = 2*dim**2
+                self.ntrials = 1000
+                self.adapt = 2*dim
+                self.regul = None
+                self.threshold = 0.99
+                self.initscl = 1.0
             
    
         def __call__(self, x):
@@ -37,19 +53,27 @@ class toy2:
 #sphere function, was toy 1
            
 class sphere:
-        def  __init__(self, mag = 1.0, dim = 20, adim = 1, sig = 1E-3):
+        def  __init__(self, mag = 1.0, dim = 20, adim = 10, sig = 1E-3):
               self.dim = dim
               self.adim = adim
               self.sig = sig
               self.mag = mag
-        
+              self.active = np.eye(dim,adim)
               self.L1 = 2.0*self.mag
               self.var = self.sig**2
-              self.name = 'Active Sphere'
+              self.name = 'Example 2: STARS, FAASTARS, and ASTARS Convergence'
+              self.nickname = 'sphere'
               self.fstar = 0
+              
+              self.maxit = 2*dim**2
+              self.ntrials = 100
+              self.adapt = dim
+              self.regul = self.sig**2
+              self.threshold = 0.999
+              self.initscl = 10.0
             
         def __call__(self,X):
-            return np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
+            return self.mag*np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
  
 class nesterov_2_f:
     
@@ -57,11 +81,19 @@ class nesterov_2_f:
         self.dim = dim
         self.adim = adim
         self.sig = sig
-        
+        self.active = np.eye(dim,adim)
         self.L1 = 4.0
         self.var = self.sig**2
-        self.name = 'Nesterov 2'
+        self.name = 'Example 3: STARS, FAASTARS, and ASTARS Convergence'
+        self.nickname = 'nesterov_2'
         self.fstar = .5*(-1 + 1 / (self.adim + 1))
+        
+        self.maxit = 3*dim**2
+        self.ntrials = 50
+        self.adapt = 2*dim
+        self.regul = self.sig**2
+        self.threshold = 0.9999
+        self.initscl = 50.0
     
     def __call__(self,x):
         
@@ -74,13 +106,6 @@ class nesterov_2_f:
                 ans += self.sig*np.random.randn(ans.size)
         return ans
     
-    
-    
-#def toy_f(x,var=1E-6):
-#    return mag*(np.dot(weights,x))**2 + var*np.random.randn(1)
-#true_as = weights / np.linalg.norm(weights)
-#toy_l1 = mag*dim*2.0
-
 
 
 #plotting parameters and definitions
@@ -89,11 +114,11 @@ sph = sphere()
 nest = nesterov_2_f()
 
 
-params = {'legend.fontsize': 40,'legend.handlelength': 3}
-plt.rcParams["figure.figsize"] = (30,20)
+params = {'legend.fontsize': 28,'legend.handlelength': 3}
+plt.rcParams["figure.figsize"] = (60,40)
 plt.rcParams['figure.dpi'] = 80
 plt.rcParams['savefig.dpi'] = 100
-plt.rcParams['font.size'] = 60
+plt.rcParams['font.size'] = 30
 plt.rcParams['figure.titlesize'] = 'xx-large'
 plt.rcParams.update(params)
 
@@ -101,32 +126,36 @@ stars_full, sf_ls = 'red', '--'
 active_stars_learned, lr_ls = 'black', '-.'
 active_stars_ref, rf_ls = 'blue', ':'
 
-#alpha=0.3  (for multiple trial plotting)
 
+# Start the clock!
+start = timeit.default_timer()
 
-#plt.semilogy(FHIST1[0:maxit,j], lw=5, alpha=alpha,color=stars_full, ls=sf_ls)
-#plt.semilogy(FHIST2[0:maxit,j], lw=5, alpha=alpha,color=active_stars_ref ,ls=rf_ls)
-#plt.semilogy(FHIST3[0:maxit,j], lw=5, alpha=alpha,color=active_stars_learned ,ls=lr_ls)
-#    plt.semilogy(FHIST1[0:maxit,j], lw=5, alpha=alpha,color=stars_full,ls=sf_ls, label='STARS, full vars with learned hyperparams')
-#    plt.semilogy(FHIST2[0:maxit,j], lw=5, alpha=alpha,color=active_stars_ref ,ls=rf_ls,  label='Active STARS, true active vars with learned hyperparams')
-#    plt.semilogy(FHIST3[0:maxit,j], lw=5, alpha=alpha,color=active_stars_learned ,ls=lr_ls,  label='Active STARS, learned active vars with learned hyperparams')
-#    plt.xlabel('$k$, iteration count')
-#    plt.ylabel('$f(\lambda^{(k)})$')
-#    title_string_1 = 'Example:'
-#   title_string_1 = title_string_1 + ex_num
-#    title_string_1 = title_string_1 + 'STARS and ASTARS Convergence Sensitivity Analysis'
-#    plt.title(title_string_1)
-
-#for f in {nest}:
-for f in {toy2f}: #,sph}:
+for f in {sph}:
+#for f in {toy2f, sph, nest}:
     dim = f.dim
-    init_pt = np.random.randn(dim)
-    ntrials = 100
-    maxit = 3*dim**2
-    #maxit = 1000
+    np.random.seed(9)
+    init_pt = f.initscl*np.random.randn(dim)
+    ntrials = f.ntrials
+    maxit = f.maxit
+
     f3_avr = np.zeros(maxit+1)
     f2_avr = np.zeros(maxit+1)
     f_avr = np.zeros(maxit+1)
+    
+    #initialize storage for data dump
+    STARS_f_sto = np.zeros((maxit+1,1))
+    STARS_x_sto = np.zeros((1,dim))
+    ASTARS_f_sto = np.zeros((maxit+1,1))
+    ASTARS_x_sto = np.zeros((1,dim))
+    FAASTARS_f_sto = np.zeros((maxit+1,1))
+    FAASTARS_x_sto = np.zeros((1,dim))    
+    
+    tr_stop = int(np.ceil((dim + 1) * (dim + 2) / 2  ))
+    if maxit > tr_stop:
+        FAASTARS_adim_sto = np.zeros((maxit-tr_stop-1,1))
+        FAASTARS_sub_dist_sto = np.zeros((maxit-tr_stop-1,1))
+    
+    # STARS
     for trial in range(ntrials):
     #sim setup
         test = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit)
@@ -138,39 +167,43 @@ for f in {toy2f}: #,sph}:
             test.step()
     
     #update average of f
-        f_avr += test.fhist  
+        f_avr += test.fhist
+        
+        # data dump
+        STARS_f_sto = np.hstack((STARS_f_sto, np.transpose([test.fhist])))
+        STARS_x_sto = np.vstack((STARS_x_sto,np.transpose(test.xhist)))
+        
         print('STARS trial',trial,' minval',test.fhist[-1])
- 
+
+    # FAASTARS
     for trial in range(ntrials):
         #sim setup
-        test = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit)
+        test = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit, true_as = f.active)
         test.get_mu_star()
         test.get_h()
-        # adapt every 10 timesteps using quadratic(after inital burn)
+        # adapt every f.adapt timesteps using quadratic(after inital burn)
         test.train_method = 'GQ'
-        test.adapt = 2*dim # Sets number of sub-cylcing steps
-        #test.regul *= 100
+        test.adapt = f.adapt # Sets number of sub-cylcing steps
+
         #test.debug = True
-        test.regul = None #test.sigma
-        test.threshold = .99
+        test.regul = f.regul
+        test.threshold = 0.999
+        
         # do 100 steps
         while test.iter < test.maxit:
-            test.step()  
-            #if test.iter % 20 == 0 and test.active is not None:
-            #    print('Step',test.iter,'Active dimension',test.active.shape[1])
-            #    print('Subspace Distance',subspace_dist(true_as,test.active))
-            # Normalization test
-            #sub_sp = ss.subspaces.Subspaces()
-            #train_x=np.hstack((test.xhist[:,0:test.iter+1],test.yhist[:,0:test.iter]))
-            #train_f=np.hstack((test.fhist[0:test.iter+1],test.ghist[0:test.iter]))
-            #sub_sp.compute(X=train_x.T,f=train_f,sstype='QPHD')
-            #usual threshold
-            #adim = find_active(sub_sp.eigenvals,sub_sp.eigenvecs)
-            #print('Subspace Distance, no scaling, raw call',subspace_dist(true_as,sub_sp.eigenvecs[:,0:adim]))
+            test.step()
+
         f2_avr += test.fhist
-        print('ASTARS trial',trial,' minval',test.fhist[-1])
+        
+        # data dump
+        FAASTARS_f_sto = np.hstack((FAASTARS_f_sto, np.transpose([test.fhist])))
+        FAASTARS_x_sto = np.vstack((FAASTARS_x_sto,np.transpose(test.xhist)))
+        if maxit > tr_stop:
+            FAASTARS_adim_sto = np.hstack((FAASTARS_adim_sto, np.transpose([test.adim_hist])))
+            FAASTARS_sub_dist_sto = np.hstack((FAASTARS_sub_dist_sto, np.transpose([test.sub_dist_hist])))
+        print('FAASTARS trial',trial,' minval',test.fhist[-1])
     
-    
+    # ASTARS
     for trial in range(ntrials):
         
         test = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit)
@@ -184,56 +217,43 @@ for f in {toy2f}: #,sph}:
     
     #update average of f
         f3_avr += test.fhist  
+        
+        # data dump
+        ASTARS_f_sto = np.hstack((ASTARS_f_sto, np.transpose([test.fhist])))
+        ASTARS_x_sto = np.vstack((ASTARS_x_sto,np.transpose(test.xhist)))
+             
+        
         print('True ASTARS trial',trial,' minval',test.fhist[-1])
         
     f_avr /= ntrials
     f2_avr /= ntrials
     f3_avr /= ntrials
+    
+
+    # Reads out key data into individual csv files via Pandas. (Need documentation for formatting...)
+    pd.DataFrame(STARS_f_sto[:,1:np.shape(STARS_f_sto)[1]]).to_csv(user_file_path + 'STARS_f_sto_' + f.nickname + '.csv', header=None, index=None, sep='\t')
+    pd.DataFrame(STARS_x_sto[1:np.shape(STARS_x_sto)[0],:]).to_csv(user_file_path + 'STARS_x_sto_' + f.nickname +  '.csv', header=None, index=None, sep='\t')
+    pd.DataFrame(ASTARS_f_sto[:,1:np.shape(ASTARS_f_sto)[1]]).to_csv(user_file_path + 'ASTARS_f_sto_' + f.nickname + '.csv', header=None, index=None, sep='\t')
+    pd.DataFrame(ASTARS_x_sto[1:np.shape(ASTARS_x_sto)[0],:]).to_csv(user_file_path + 'ASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
+    pd.DataFrame(FAASTARS_f_sto[:,1:np.shape(FAASTARS_f_sto)[1]]).to_csv(user_file_path + 'FAASTARS_f_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
+    pd.DataFrame(FAASTARS_x_sto[1:np.shape(FAASTARS_x_sto)[0],:]).to_csv(user_file_path + 'FAASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
+    if maxit > tr_stop:
+        pd.DataFrame(FAASTARS_adim_sto[:,1:np.shape(FAASTARS_adim_sto)[1]]).to_csv(user_file_path + 'FAASTARS_adim_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')  
+        pd.DataFrame(FAASTARS_sub_dist_sto[:,1:np.shape(FAASTARS_sub_dist_sto)[1]]).to_csv(user_file_path + 'FAASTARS_sub_dist_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')      
+        
+    # Stop the clock!
+    stop = timeit.default_timer()
+
+    # Difference stop-start tells us run time
+    time = stop - start
+    print('the time of this experiment was:    ', time/3600, 'hours')
  
-    plt.semilogy(np.abs(f_avr-f.fstar),lw = 5,label='Stars',color=stars_full, ls=sf_ls)
-    plt.semilogy(np.abs(f2_avr-f.fstar), lw = 5, label='Astars',color=active_stars_learned ,ls=lr_ls)
-    plt.semilogy(np.abs(f3_avr-f.fstar), lw = 5,label = 'Astars, true subspace',color=active_stars_ref ,ls=rf_ls)
+    plt.semilogy(np.abs(f_avr-f.fstar),lw = 5,label='STARS',color=stars_full, ls=sf_ls)
+    plt.semilogy(np.abs(f2_avr-f.fstar), lw = 5, label='FAASTARS (Approx $\\tilde{\mathcal{A}}$)',color=active_stars_learned ,ls=lr_ls)
+    plt.semilogy(np.abs(f3_avr-f.fstar), lw = 5,label = 'ASTARS (True $\mathcal{A}$)',color=active_stars_ref ,ls=rf_ls)
     plt.title(f.name)
     plt.xlabel('$k$, iteration count')
-    plt.ylabel('$|f(\lambda^{(k)})-f_*|$')
+    plt.ylabel('$|f(\lambda^{(k)})-f^*|$')
     plt.legend()
     plt.show()
 
-def get_mat(X,f):
-    #un-normalized computation
-    gquad = ss.utils.response_surfaces.PolynomialApproximation(N=2)
-    gquad.train(X, f, regul =None) #regul = self.var)
-    # get regression coefficients
-    b, A = gquad.g, gquad.H
-    C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
-    sub_sp.eigenvals,sub_sp.eigenvecs = ss.subspaces.sorted_eigh(C)
-    adim = find_active(sub_sp.eigenvals,sub_sp.eigenvecs)
-    print('Subspace Distance, direct call with regul',subspace_dist(true_as,sub_sp.eigenvecs[:,0:adim]))
-    #print(gquad.H[0,0])
-    print('Active subspace, first vector',sub_sp.eigenvecs[:,0])
-    
-    #mapped math
-    lb = np.amin(X,axis=0).reshape(-1,1)
-    ub = np.amax(X,axis=0).reshape(-1,1)
-    #print(lb.shape)
-    nrm_data=ss.utils.misc.BoundedNormalizer(lb,ub)
-
-    #print(lb,ub)
-    xhat=nrm_data.normalize(X)
-    
-    scale = .5*(ub-lb)
-    print('scaling vector', scale)
-    gquad.train(xhat,f, regul = None)
-    b2, A2 = gquad.g, gquad.H
-    C2 = np.outer(b2,b2.transpose()) + 1.0/3.0*np.dot(A2,A2.transpose())
-    D = np.diag(1.0/scale.flatten())
-    #print(D)
-    C2 = D @ C2 @ D
-    
-    sub_sp.eigenvals,sub_sp.eigenvecs = ss.subspaces.sorted_eigh(C2)
-    adim = find_active(sub_sp.eigenvals,sub_sp.eigenvecs)
-    print('Subspace Distance, after mapping',subspace_dist(true_as,sub_sp.eigenvecs[:,0:adim]))
-    #print(gquad.H[0,0])
-    print('Active subspace, first vector',sub_sp.eigenvecs[:,0])
-    
-#get_mat(train_x.T,train_f)
