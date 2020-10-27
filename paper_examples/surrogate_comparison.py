@@ -73,9 +73,10 @@ class sphere:
               self.regul = self.sig**2
               self.threshold = 0.999
               self.initscl = 10.0
+              self.shift = np.ones(adim)
             
         def __call__(self,X):
-            return self.mag*np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
+            return self.mag*np.sum((X[0:self.adim]-self.shift)**2) + self.sig*np.random.randn(1)
  
 class nesterov_2_f:
     
@@ -120,63 +121,49 @@ for f in {toy2f, sph, nest}:
     # initiate storage
     n_samps = f.maxit
     x_sto = np.zeros((n_samps,f.dim))
-    f_sto = np.zeros(n_samps)
+    f_sto = np.zeros((n_samps,1))
 
    # perform random draws, store x and f values
     for i in range(n_samps):
-        x = np.random.randn(f.dim) # already normalized to [-1,1]
+        x = np.random.randn(f.dim)
         x_sto[i,:] = x.T
         f_sto[i] = f(x)
         
     
     # Make quadratic response surface
-    subspace = ss.subspaces.Subspaces()
-    subspace.compute(X = x_sto, f = f_sto, nboot = 0, sstype = 'QPHD')
+    #subspace = ss.subspaces.Subspaces()
+    #subspace.compute(X = x_sto, f = f_sto, nboot = 0, sstype = 'QPHD')
     RS = ss.utils.response_surfaces.PolynomialApproximation(2)
-    y = x_sto.dot(subspace.W1)
+    y = x_sto   #.dot(subspace.W1)
     RS.train(y, f_sto)
     
-    print('Rsqr',RS.Rsqr,'using',n_samps,'samples for problem', f.nickname)
+    #mask = np.abs(RS.g) > f.sig
+    #RS.g *= mask
+    #mask2 = np.abs(RS.H) > f.sig
+    #RS.H *= mask2
     
-    avdom = ss.domains.UnboundedActiveVariableDomain(subspace)
+    print(RS.poly_weights[0])
     
-    ystar, fstar = ss.optimizers.av_minimize(lambda x: RS.predict(np.array([x]))[0], avdom)
-
-  
-            
-    print(ystar, fstar)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    print('Rsqr',RS.Rsqr,'using',n_samps,'samples for problem', f.nickname, '\n')
+    
+    def surrogate(x):
+        return RS.predict(np.array([x]))[0]
+        
+    def grad_surrogate(x):
+        return RS.predict(np.array([x]), compgrad=True)[1].flatten()
+        
+    print('check surrogate by evaluating at vector of all ones',surrogate(np.ones(f.dim)))
+    print('check compgrad of surrogate by evaluating at vector of all ones',grad_surrogate(np.ones(f.dim)))
+    print('quadratic surrogate coefficients', RS.g, RS.H)
+    
+    
+    x0 = 10*np.random.rand(f.dim)
+    bd = opt.Bounds(np.min(x_sto),np.max(x_sto))
+    
+    surrogate_min = opt.minimize(surrogate, x0, jac = grad_surrogate, bounds = bd)
+    
+    print('surrogate at x0:', surrogate(x0) , 'f at x0 is', f(x0), '\n')
+    
+    print('obtained min:',surrogate_min.x, '\n surrogate evaluated at min:' , surrogate(surrogate_min.x), '\n f evaluated at min:' , f(surrogate_min.x), '\n \n')
+    
 
