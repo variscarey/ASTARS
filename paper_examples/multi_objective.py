@@ -39,7 +39,7 @@ class toy2:
                 self.maxit = 1000
                 self.ntrials = 100
                 self.adapt = dim
-                self.regul = None
+                self.regul = self.var
                 self.threshold = 0.999
                 self.initscl = 10.0
             
