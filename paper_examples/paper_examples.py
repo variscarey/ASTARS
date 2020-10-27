@@ -38,7 +38,7 @@ class toy2:
                 self.active = self.active.reshape(-1,1)
                 
                 self.maxit = 2*dim**2
-                self.ntrials = 10
+                self.ntrials = 1000
                 self.adapt = 2*dim
                 self.regul = None
                 self.threshold = 0.99
