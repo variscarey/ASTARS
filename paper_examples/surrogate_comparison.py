@@ -39,7 +39,7 @@ class toy2:
                 self.active = self.weights / np.linalg.norm(self.weights)
                 self.active = self.active.reshape(-1,1)
                 
-                self.maxit = 600 # because FAASTARS converged in about 300 iterations...
+                self.maxit = 700 # because FAASTARS converged in about 350 iterations...
                 self.ntrials = 1000
                 self.adapt = 2*dim
                 self.regul = None
@@ -124,7 +124,7 @@ for f in {toy2f, sph, nest}:
 
    # perform random draws, store x and f values
     for i in range(n_samps):
-        x = np.random.uniform(-1,1,f.dim) # already normalized to [-1,1]
+        x = np.random.randn(f.dim) # already normalized to [-1,1]
         x_sto[i,:] = x.T
         f_sto[i] = f(x)
         
