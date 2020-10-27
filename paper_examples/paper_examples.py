@@ -42,7 +42,7 @@ class toy2:
                 self.adapt = 2*dim
                 self.regul = None
                 self.threshold = 0.99
-                self.initscl = 1.0
+                self.initscl = 10.0
             
    
         def __call__(self, x):
