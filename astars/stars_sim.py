@@ -50,7 +50,13 @@ class Stars_sim:
         self.yhist = np.zeros((self.dim,self.maxit))
         self.L1_hist = np.zeros(self.maxit+1)
         
-        self.tr_stop = int(np.ceil((self.dim + 1) * (self.dim + 2) / 2)) # for quads only!
+        if self.train_method == 'GQ':
+            self.tr_stop = (self.dim + 1) * (self.dim + 2)// 2 # for quads only!
+        elif self.train_method == 'GL':
+            self.tr_stop = self.dim + 1 // 2
+        else:
+            self.tr_stop = self.dim #for LL, need to work out if sharp?
+            
         if self.maxit > self.tr_stop:
             self.adim_hist = np.zeros(self.maxit-self.tr_stop-1)
             if self.true_as is not None:
@@ -170,7 +176,7 @@ class Stars_sim:
         self.ghist[self.iter-1]=g
         self.L1_hist[self.iter-1]=self.L1
     
-        if self.update_L1 is True and self.active is None and self.mult is False:
+        if self.update_L1 is True and (self.active is None or self.train_method != 'GQ') and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
             #not implemented for multiplicative noise yet 
             #1Dx data
@@ -237,9 +243,6 @@ class Stars_sim:
         
         
         if self.train_method is None:
-            #determine appropriate training method (RBF+polynomial)
-            #use polynomial model for now, use data to determine degree
-            #ss,rbf=train_rbf(train_x,train_f,noise=self.regul)
            
             if train_f.size > (self.dim+1)*(self.dim+2)/2:
                 gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
@@ -253,28 +256,32 @@ class Stars_sim:
                 C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
                 D = np.diag(1.0/(.5*(ub-lb).flatten()))
                 C = D @ C @ D
+                ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
                 
             elif train_f.size > (self.dim + 1):
-                gquad = ac.utils.response_surfaces.PolynomialApproximation(N=1)
-                gquad.train(train_x, train_f, regul = self.regul)
-                b = gquad.g
-                C = np.outer(b, b.transpose()) #+ 1.0/3.0*np.dot(A, A.transpose())
-                D = np.diag(1.0/(.5*(ub-lb).flatten()))
-                C = D @ C @ D
-            ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
-        
+                #use local linear models instead!
+                #gquad = ac.utils.response_surfaces.PolynomialApproximation(N=1)
+                #gquad.train(train_x, train_f, regul = self.regul)
+                #b = gquad.g
+                #C = np.outer(b, b.transpose()) #+ 1.0/3.0*np.dot(A, A.transpose())
+                #D = np.diag(1.0/(.5*(ub-lb).flatten()))
+                #C = D @ C @ D
+                #ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
+                df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
+                #chain rule for LL
+                df = df / (.5*(ub-lb).flatten())
+                ss.compute(df=df, nboot=0)
         elif self.train_method == 'LL':
             #Estimated gradients using local linear models
-            print(train_x.size,train_f.size)
+            #print(train_x.size,train_f.size)
             df = ac.gradients.local_linear_gradients(train_x, train_f.reshape(-1,1)) 
+            #chain rule for LL
+            df = df / (.5*(ub-lb).flatten())
             ss.compute(df=df, nboot=0)
         
         elif self.train_method == 'GQ':
             #use global quadratic surrogate
-            #use training method from AS, should give exact integral?
-            #TODO add ridge regression penalty for known variable noise to 
-            #prevent overfitting
-            #ss.train(X=train_x,f=train_f,sstype='QPHD')
+            
             gquad = ac.utils.response_surfaces.PolynomialApproximation(N=2)
             gquad.train(train_x, train_f, regul = self.regul) #regul = self.var)
 
@@ -289,9 +296,11 @@ class Stars_sim:
             C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
         
-        #print('Condition number',gquad.cond)
-        print('Rsqr',gquad.Rsqr)
-        if self.set_dim == False:
+            #print('Condition number',gquad.cond)
+            print('Rsqr',gquad.Rsqr)
+
+        if self.set_dim is False:
+
             self.adim = find_active(ss.eigenvals, ss.eigenvecs, threshold = self.threshold)
     
             
