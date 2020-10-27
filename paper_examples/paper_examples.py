@@ -38,7 +38,7 @@ class toy2:
                 self.active = self.active.reshape(-1,1)
                 
                 self.maxit = 2*dim**2
-                self.ntrials = 1000
+                self.ntrials = 10
                 self.adapt = 2*dim
                 self.regul = None
                 self.threshold = 0.99
@@ -130,7 +130,7 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {nest}:
+for f in {toy2f}:
 #for f in {toy2f, sph, nest}:
     dim = f.dim
     np.random.seed(9)
@@ -150,10 +150,7 @@ for f in {nest}:
     FAASTARS_f_sto = np.zeros((maxit+1,1))
     FAASTARS_x_sto = np.zeros((1,dim))    
     
-    tr_stop = int(np.ceil((dim + 1) * (dim + 2) / 2  ))
-    if maxit > tr_stop:
-        FAASTARS_adim_sto = np.zeros((maxit-tr_stop-1,1))
-        FAASTARS_sub_dist_sto = np.zeros((maxit-tr_stop-1,1))
+
     
     # STARS
     for trial in range(ntrials):
@@ -195,10 +192,15 @@ for f in {nest}:
 
         f2_avr += test.fhist
         
+
+        if maxit > test.tr_stop:
+            FAASTARS_adim_sto = np.zeros((maxit-test.tr_stop-1,1))
+            FAASTARS_sub_dist_sto = np.zeros((maxit-test.tr_stop-1,1))
+        
         # data dump
         FAASTARS_f_sto = np.hstack((FAASTARS_f_sto, np.transpose([test.fhist])))
         FAASTARS_x_sto = np.vstack((FAASTARS_x_sto,np.transpose(test.xhist)))
-        if maxit > tr_stop:
+        if maxit > test.tr_stop:
             FAASTARS_adim_sto = np.hstack((FAASTARS_adim_sto, np.transpose([test.adim_hist])))
             FAASTARS_sub_dist_sto = np.hstack((FAASTARS_sub_dist_sto, np.transpose([test.sub_dist_hist])))
         print('FAASTARS trial',trial,' minval',test.fhist[-1])
@@ -237,7 +239,7 @@ for f in {nest}:
     pd.DataFrame(ASTARS_x_sto[1:np.shape(ASTARS_x_sto)[0],:]).to_csv(user_file_path + 'ASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
     pd.DataFrame(FAASTARS_f_sto[:,1:np.shape(FAASTARS_f_sto)[1]]).to_csv(user_file_path + 'FAASTARS_f_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
     pd.DataFrame(FAASTARS_x_sto[1:np.shape(FAASTARS_x_sto)[0],:]).to_csv(user_file_path + 'FAASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
-    if maxit > tr_stop:
+    if maxit > test.tr_stop:
         pd.DataFrame(FAASTARS_adim_sto[:,1:np.shape(FAASTARS_adim_sto)[1]]).to_csv(user_file_path + 'FAASTARS_adim_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')  
         pd.DataFrame(FAASTARS_sub_dist_sto[:,1:np.shape(FAASTARS_sub_dist_sto)[1]]).to_csv(user_file_path + 'FAASTARS_sub_dist_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')      
         
