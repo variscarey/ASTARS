@@ -130,7 +130,7 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {sph}:
+for f in {nest}:
 #for f in {toy2f, sph, nest}:
     dim = f.dim
     np.random.seed(9)
@@ -187,7 +187,7 @@ for f in {sph}:
 
         #test.debug = True
         test.regul = f.regul
-        test.threshold = 0.999
+        test.threshold = f.threshold
         
         # do 100 steps
         while test.iter < test.maxit:
