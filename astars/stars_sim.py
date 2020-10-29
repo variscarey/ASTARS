@@ -335,9 +335,10 @@ class Stars_sim:
             self.L1 = sur_L1
 
         self.active=ss.eigenvecs[:,0:self.adim]
-        print(ss.eigenvals[0:self.adim+1].flatten())
+        #print(ss.eigenvals[0:self.adim+1].flatten())
         self.wts = 1/np.sqrt(ss.eigenvals.flatten())
         self.wts /= self.wts[0]
+        self.wts = np.minimum(10*np.ones(self.wts.shape),self.wts)
         self.directions = ss.eigenvecs
         ##update ASTARS parameters
         self.get_mu_star()
