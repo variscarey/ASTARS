@@ -214,9 +214,12 @@ class Stars_sim:
             poly = np.polyfit(np.arange(self.cycle_win),fsamp,1)
             ## how much are we decreasing?
             #if poly[0] > -4*(self.adim+4)*self.L1/(self.iter+1):
-            if poly[0] > -3*self.sigma*(self.adim)/(5*np.sqrt(2)):
+            if poly[0] > -250*self.sigma*(self.adim)/(5*np.sqrt(2)):
                 print('Iteration ',self.iter)
                 print('Bad Average recent slope',poly[0])
+                if self.threshold < 1-1E-4:
+                    self.threshold += 0.005
+                    print('Threshold was increased to', self.threshold, 'for the user due to slow convergence.')
         # we now include training data x_noise,f_noise from ECNoise
         if self.x_noise is None:
             if self.Window is None:
