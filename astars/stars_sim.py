@@ -5,6 +5,7 @@ print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file_
 from .utils.stars_param import get_L1,ECNoise
 #from .utils.surrogates import train_rbf
 from .utils.misc import find_active, subspace_dist
+from scipy.special import gamma
 
 import numpy as np
 import active_subspaces as ac
@@ -27,6 +28,7 @@ class Stars_sim:
         self.set_dim = False
         self.subcycle = False
         self.cycle_win = 10
+        self.sphere = False
         
         #default internal settings, can be modified.
         self.update_L1 = False
@@ -149,6 +151,11 @@ class Stars_sim:
                 u = np.random.normal(0,1,(self.dim))
             else: 
                 u = self.wts * np.random.randn(self.dim)
+            if self.sphere is True:
+                print('original step length',np.linalg.norm(u))
+                u /= np.linalg.norm(u)
+                u *= np.sqrt(2)*gamma((self.dim+1)/2)
+                u /= gamma(self.dim/2)
                 
         else: 
             act_dim=self.active.shape[1]
@@ -156,7 +163,11 @@ class Stars_sim:
                 lam = np.random.normal(0,1,(act_dim))
             else:
                 lam = np.zeros(act_dim)
-                lam = self.wts[0:act_dim] * np.random.randn(act_dim)        
+                lam = self.wts[0:act_dim] * np.random.randn(act_dim) 
+            if self.sphere is True:
+                lam /= np.linalg.norm(lam)
+                lam *= np.sqrt(2)*gamma((act_dim+1)/2)
+                lam /= gamma((act_dim/2))
             u = self.active@lam
             if self.debug is True:
                 print('Iteration',self.iter,'Oracle step=',u,)
