@@ -113,7 +113,7 @@ nest = nesterov_2_f() # To be worked on for extensions project/paper; unstable f
 start = timeit.default_timer()
 
 
-for f in {sph, toy2f}:
+for f in {toy2f,sph}:
     print('RUNNING PROBLEM ',f.name)
     dim = f.dim
     np.random.seed(9)
@@ -135,9 +135,7 @@ for f in {sph, toy2f}:
     FAASTARS_x_sto = np.zeros((1,dim))
     FAASTARS_L1_sto = np.zeros((maxit+1,ntrials))
     FAASTARS_var_sto = np.zeros(ntrials)
-    if maxit > tr_stop:
-        FAASTARS_adim_sto = np.zeros((maxit-tr_stop-1,ntrials))
-        FAASTARS_sub_dist_sto = np.zeros((maxit-tr_stop-1,ntrials))
+
     
     
     
@@ -151,7 +149,7 @@ for f in {sph, toy2f}:
         test.get_mu_star()
         test.get_h()
     # do training steps
-        while test.iter < tr_stop:
+        while test.iter < test.tr_stop:
             test.step()
     
     #update average of f and save for start of astars...?
@@ -172,6 +170,11 @@ for f in {sph, toy2f}:
 
         f_avr += test.fhist         
         f2_avr += test2.fhist
+        
+        if maxit > test2.tr_stop:
+            FAASTARS_adim_sto = np.zeros((maxit-test2.tr_stop-1,ntrials))
+            FAASTARS_sub_dist_sto = np.zeros((maxit-test2.tr_stop-1,ntrials))        
+        
         # data dump
         STARS_f_sto = np.hstack((STARS_f_sto, np.transpose([test.fhist])))
         STARS_x_sto = np.vstack((STARS_x_sto,np.transpose(test.xhist)))
@@ -183,7 +186,7 @@ for f in {sph, toy2f}:
         FAASTARS_L1_sto[:,trial] = test2.L1_hist
         FAASTARS_var_sto[trial] = test2.var
         
-        if maxit > tr_stop:
+        if maxit > test2.tr_stop:
             FAASTARS_adim_sto[:,trial] = test2.adim_hist
             FAASTARS_sub_dist_sto[:,trial] = test2.sub_dist_hist
             
@@ -200,7 +203,7 @@ for f in {sph, toy2f}:
     pd.DataFrame(FAASTARS_L1_sto[:,1:np.shape(FAASTARS_L1_sto)[1]]).to_csv(user_file_path + 'FAASTARS_L1_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
     pd.DataFrame(FAASTARS_var_sto).to_csv(user_file_path + 'FAASTARS_var_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
     
-    if maxit > tr_stop:
+    if maxit > test2.tr_stop:
         pd.DataFrame(FAASTARS_adim_sto[:,1:np.shape(FAASTARS_adim_sto)[1]]).to_csv(user_file_path + 'FAASTARS_adim_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')  
         pd.DataFrame(FAASTARS_sub_dist_sto[:,1:np.shape(FAASTARS_sub_dist_sto)[1]]).to_csv(user_file_path + 'FAASTARS_sub_dist_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')  
 
