@@ -101,7 +101,7 @@ class Stars_sim:
         self.xhist[:,0] = self.x
         self.fhist[0] = self.f(self.x)
         self.sigma = np.sqrt(self.var)
-        self.regul = self.sigma
+        self.regul = self.var
             
     def get_mu_star(self):
         if self.active is None:
@@ -151,7 +151,7 @@ class Stars_sim:
                 u = np.random.normal(0,1,(self.dim))
             else: 
                 u = self.wts * np.random.randn(self.dim)
-            if self.sphere is True:
+            if self.sphere is True and self.debug is True:
                 print('original step length',np.linalg.norm(u))
                 u /= np.linalg.norm(u)
                 u *= np.sqrt(2)*gamma((self.dim+1)/2)
@@ -170,7 +170,7 @@ class Stars_sim:
                 lam /= gamma((act_dim/2))
             u = self.active@lam
             if self.debug is True:
-                print('Iteration',self.iter,'Oracle step=',u,)
+                print('Iteration',self.iter,'Oracle step=',u)
             #print(u.shape)
             if self.maxit > self.tr_stop and self.iter > self.tr_stop:
                 self.adim_hist[self.iter-self.tr_stop-1] = act_dim
