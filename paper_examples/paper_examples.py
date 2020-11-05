@@ -48,7 +48,31 @@ class toy2:
         def __call__(self, x):
             return self.mag*(np.dot(self.weights,x)**2) + self.sig*np.random.randn(1)
 
-
+class toy_sqr:
+        def __init__(self, mag = 1.0, dim = 20, weights = None, sig = 1E-6):
+                self.mag = mag
+                self.dim = dim
+                self.L1 = self.mag*self.dim*12.0
+                self.sig = sig
+                self.var = self.sig**2
+                self.name = 'Example 1: STARS, FAASTARS, and ASTARS Convergence'
+                self.nickname = 'toy_2'
+                self.fstar = 0
+                if weights is None:
+                    self.weights = np.ones(self.dim)
+                self.active = self.weights / np.linalg.norm(self.weights)
+                self.active = self.active.reshape(-1,1)
+                
+                self.maxit = 2*dim**2
+                self.ntrials = 10
+                self.adapt = 2*dim
+                self.regul = None
+                self.threshold = 0.99
+                self.initscl = 1.0
+            
+   
+        def __call__(self, x):
+            return self.mag*(np.dot(self.weights,x)**4) + self.sig*np.random.randn(1)
             
 #sphere function, was toy 1
            
@@ -109,7 +133,7 @@ class nesterov_2_f:
 
 
 #plotting parameters and definitions
-toy2f = toy2()
+toy2f = toy_sqr()
 sph = sphere()
 nest = nesterov_2_f()
 
@@ -130,7 +154,7 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {sph}:
+for f in {toy2f}:
 #for f in {toy2f, sph, nest}:
     dim = f.dim
     np.random.seed(9)
@@ -170,8 +194,8 @@ for f in {sph}:
         f_avr += test.fhist
         
         # data dump
-        STARS_f_sto = np.hstack((STARS_f_sto, np.transpose([test.fhist])))
-        STARS_x_sto = np.vstack((STARS_x_sto,np.transpose(test.xhist)))
+        #STARS_f_sto = np.hstack((STARS_f_sto, np.transpose([test.fhist])))
+        #STARS_x_sto = np.vstack((STARS_x_sto,np.transpose(test.xhist)))
         
         print('STARS trial',trial,' minval',test.fhist[-1])
 
@@ -184,7 +208,6 @@ for f in {sph}:
         # adapt every f.adapt timesteps using quadratic(after inital burn)
         test.train_method = 'GQ'
         test.adapt = f.adapt # Sets number of sub-cylcing steps
-
         #test.debug = True
         test.regul = f.regul
         test.threshold = 0.999
@@ -192,15 +215,17 @@ for f in {sph}:
         # do 100 steps
         while test.iter < test.maxit:
             test.step()
+            if test.active is not None and test.iter // test.adapt:
+               print('distance',subspace_dist(test.active,f.active))
 
         f2_avr += test.fhist
         
         # data dump
-        FAASTARS_f_sto = np.hstack((FAASTARS_f_sto, np.transpose([test.fhist])))
-        FAASTARS_x_sto = np.vstack((FAASTARS_x_sto,np.transpose(test.xhist)))
-        if maxit > tr_stop:
-            FAASTARS_adim_sto = np.hstack((FAASTARS_adim_sto, np.transpose([test.adim_hist])))
-            FAASTARS_sub_dist_sto = np.hstack((FAASTARS_sub_dist_sto, np.transpose([test.sub_dist_hist])))
+        #FAASTARS_f_sto = np.hstack((FAASTARS_f_sto, np.transpose([test.fhist])))
+        #FAASTARS_x_sto = np.vstack((FAASTARS_x_sto,np.transpose(test.xhist)))
+        #if maxit > tr_stop:
+            #FAASTARS_adim_sto = np.hstack((FAASTARS_adim_sto, np.transpose([test.adim_hist])))
+            #FAASTARS_sub_dist_sto = np.hstack((FAASTARS_sub_dist_sto, np.transpose([test.sub_dist_hist])))
         print('FAASTARS trial',trial,' minval',test.fhist[-1])
     
     # ASTARS
@@ -219,8 +244,8 @@ for f in {sph}:
         f3_avr += test.fhist  
         
         # data dump
-        ASTARS_f_sto = np.hstack((ASTARS_f_sto, np.transpose([test.fhist])))
-        ASTARS_x_sto = np.vstack((ASTARS_x_sto,np.transpose(test.xhist)))
+        #ASTARS_f_sto = np.hstack((ASTARS_f_sto, np.transpose([test.fhist])))
+        #ASTARS_x_sto = np.vstack((ASTARS_x_sto,np.transpose(test.xhist)))
              
         
         print('True ASTARS trial',trial,' minval',test.fhist[-1])
@@ -231,15 +256,15 @@ for f in {sph}:
     
 
     # Reads out key data into individual csv files via Pandas. (Need documentation for formatting...)
-    pd.DataFrame(STARS_f_sto[:,1:np.shape(STARS_f_sto)[1]]).to_csv(user_file_path + 'STARS_f_sto_' + f.nickname + '.csv', header=None, index=None, sep='\t')
-    pd.DataFrame(STARS_x_sto[1:np.shape(STARS_x_sto)[0],:]).to_csv(user_file_path + 'STARS_x_sto_' + f.nickname +  '.csv', header=None, index=None, sep='\t')
-    pd.DataFrame(ASTARS_f_sto[:,1:np.shape(ASTARS_f_sto)[1]]).to_csv(user_file_path + 'ASTARS_f_sto_' + f.nickname + '.csv', header=None, index=None, sep='\t')
-    pd.DataFrame(ASTARS_x_sto[1:np.shape(ASTARS_x_sto)[0],:]).to_csv(user_file_path + 'ASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
-    pd.DataFrame(FAASTARS_f_sto[:,1:np.shape(FAASTARS_f_sto)[1]]).to_csv(user_file_path + 'FAASTARS_f_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
-    pd.DataFrame(FAASTARS_x_sto[1:np.shape(FAASTARS_x_sto)[0],:]).to_csv(user_file_path + 'FAASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
-    if maxit > tr_stop:
-        pd.DataFrame(FAASTARS_adim_sto[:,1:np.shape(FAASTARS_adim_sto)[1]]).to_csv(user_file_path + 'FAASTARS_adim_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')  
-        pd.DataFrame(FAASTARS_sub_dist_sto[:,1:np.shape(FAASTARS_sub_dist_sto)[1]]).to_csv(user_file_path + 'FAASTARS_sub_dist_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')      
+    #pd.DataFrame(STARS_f_sto[:,1:np.shape(STARS_f_sto)[1]]).to_csv(user_file_path + 'STARS_f_sto_' + f.nickname + '.csv', header=None, index=None, sep='\t')
+    #pd.DataFrame(STARS_x_sto[1:np.shape(STARS_x_sto)[0],:]).to_csv(user_file_path + 'STARS_x_sto_' + f.nickname +  '.csv', header=None, index=None, sep='\t')
+    #pd.DataFrame(ASTARS_f_sto[:,1:np.shape(ASTARS_f_sto)[1]]).to_csv(user_file_path + 'ASTARS_f_sto_' + f.nickname + '.csv', header=None, index=None, sep='\t')
+    #pd.DataFrame(ASTARS_x_sto[1:np.shape(ASTARS_x_sto)[0],:]).to_csv(user_file_path + 'ASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
+    #pd.DataFrame(FAASTARS_f_sto[:,1:np.shape(FAASTARS_f_sto)[1]]).to_csv(user_file_path + 'FAASTARS_f_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
+    #pd.DataFrame(FAASTARS_x_sto[1:np.shape(FAASTARS_x_sto)[0],:]).to_csv(user_file_path + 'FAASTARS_x_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')
+    #if maxit > tr_stop:
+        #pd.DataFrame(FAASTARS_adim_sto[:,1:np.shape(FAASTARS_adim_sto)[1]]).to_csv(user_file_path + 'FAASTARS_adim_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')  
+        #pd.DataFrame(FAASTARS_sub_dist_sto[:,1:np.shape(FAASTARS_sub_dist_sto)[1]]).to_csv(user_file_path + 'FAASTARS_sub_dist_sto_'  + f.nickname + '.csv', header=None, index=None, sep='\t')      
         
     # Stop the clock!
     stop = timeit.default_timer()

@@ -48,8 +48,8 @@ plt.rcParams.update(params)
 np.random.seed(9)
 this_init_pt = np.random.randn(f.dim)
 
-ntrials = 25
-maxit = 5000
+ntrials = 20
+maxit = 600
 
 dim = f.dim
 
@@ -66,7 +66,7 @@ for trial in range(ntrials):
     test.STARS_only = True
     test.get_mu_star()
     test.get_h()
-    # do stars steps
+
     while test.iter < test.maxit:
         test.step()
 	    
@@ -74,7 +74,7 @@ for trial in range(ntrials):
     f_avr += test.fhist
     print('STARS trial',trial,' minval',test.fhist[-1])
     
-a_dims = [2,4,8]
+a_dims = [2]
 n_a_dims = np.size(a_dims)
 f2_avr = np.zeros((maxit+1,n_a_dims))
 j=0
@@ -85,6 +85,7 @@ for i in a_dims:
         test.get_mu_star()
         test.get_h()        
         test.set_dim = True
+        test.subcycle = True
         test.adim = i # hard-code adim
         test.train_method = 'GQ'
         test.adapt = 3.0*f.dim
@@ -113,8 +114,8 @@ f2_avr /= ntrials
 
 
 
-print(f_avr)
-print(f2_avr)
+#print(f_avr)
+#print(f2_avr)
 plt.semilogy(np.abs(f_avr-f.fstar),lw = 5, label='STARS', color='black')
 
 color_pal = ['blue', 'red', 'orange']

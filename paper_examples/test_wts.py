@@ -24,7 +24,7 @@ user_file_path = '/home/ccm/Desktop/'
 
 class weight_sphere:
 
-    def __init__(self, mag = 1.0, dim = 10, adim = 3, weights = None, sig = 1E-6):
+    def __init__(self, mag = 1.0, dim = 10, adim = 3, weights = None, sig = 1E-3):
                 self.mag = mag
                 self.dim = dim
                 self.L1 = self.mag*self.dim*2.0
@@ -79,8 +79,8 @@ f = ws
 #prinp.random.seed(9)
 init_pt = np.ones(f.dim)
 init_pt /= np.linalg.norm(init_pt)
-ntrials = 10
-maxit = 300
+ntrials = 30
+maxit = 900
 
 
 f_avr = np.zeros(maxit+1)
@@ -96,7 +96,7 @@ for trial in range(ntrials):
    test.get_mu_star()
    test.get_h()
    test.train_method = 'GQ'
-   test.threshold = .9999
+   test.threshold = .999
     # do 100 steps
    while test.iter < test.maxit:
        test.step()
@@ -127,8 +127,7 @@ for trial in range(ntrials):
    test.get_mu_star()
    test.get_h()
    test.train_method = 'GQ'
-   test.threshold = .99999
-    # do 100 steps
+   test.threshold = .999
    while test.iter < test.maxit:
        test.step()
     

@@ -68,7 +68,7 @@ class sphere:
               self.threshold = 0.9995
             
         def __call__(self,X):
-            return mag*np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
+            return self.mag*np.sum(X[0:self.adim]**2) + self.sig*np.random.randn(1)
  
 class nesterov_2_f:
     
@@ -118,7 +118,7 @@ for f in {sph, toy2f}:
     dim = f.dim
     np.random.seed(9)
     init_pt = 10*np.random.randn(dim) #  works for toy2 and active sphere
-    ntrials = 50 #250
+    ntrials = 10 #250
     tr_stop = (dim+2)*(dim+1)//2
     maxit = f.maxit
 
@@ -143,7 +143,7 @@ for f in {sph, toy2f}:
     
     for trial in range(ntrials):
     #sim setup
-        test = Stars_sim(f, init_pt, L1 = None, var = None, verbose = False, maxit = maxit, true_as = f.active)
+        test = Stars_sim(f, init_pt, L1 = None, var = None, verbose = False, maxit = maxit, true_as = f.active, train_method = 'GQ')
         test.STARS_only = True
         print('Inital L1',test.L1)
         print('Inital var',test.var)
@@ -158,7 +158,8 @@ for f in {sph, toy2f}:
         
         test2 = copy.deepcopy(test)
         test2.STARS_only = False
-        test2.train_method = 'GQ'
+        #test2.train_method = 'GQ'
+        
         test2.adapt = f.dim # Sets number of sub-cylcing steps -- works well for toy2 and sphere
         #test.debug = True
         test2.regul = test.sigma**2 # works well for toy2 and sphere
@@ -227,7 +228,7 @@ for f in {sph, toy2f}:
  
     plt.semilogy(np.abs(f_avr-f.fstar),label='STARS', color = 'red', lw = 5)
     plt.semilogy(np.abs(f2_avr-f.fstar), label='FAASTARS', color = 'black', lw = 5, ls = '--')
-    #plt.axvline(tr_stop)
+    plt.axvline(tr_stop)
     plt.title(f.name)
     plt.xlabel('$k$, iteration count')
     plt.ylabel('$|f(\lambda^{(k)})-f^*|$')    
