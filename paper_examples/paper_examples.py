@@ -111,12 +111,11 @@ class nesterov_2_f:
         self.name = 'Example 3: STARS, FAASTARS, and ASTARS Convergence'
         self.nickname = 'nesterov_2'
         self.fstar = .5*(-1 + 1 / (self.adim + 1))
-        
-        self.maxit = 3*dim**2
-        self.ntrials = 50
+        self.maxit = 6000
+        self.ntrials = 1 #50
         self.adapt = 2*dim
         self.regul = self.sig**2
-        self.threshold = 0.9999
+        self.threshold = .9 # ideal for this setup: 0.999
         self.initscl = 50.0
     
     def __call__(self,x):
@@ -154,7 +153,7 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {toy2f}:
+for f in {nest}:
 #for f in {toy2f, sph, nest}:
     dim = f.dim
     np.random.seed(9)
@@ -204,7 +203,15 @@ for f in {toy2f}:
         test.get_h()
         # adapt every f.adapt timesteps using quadratic(after inital burn)
         test.train_method = 'GQ'
+<<<<<<< HEAD
         test.adapt = f.adapt # Sets number of sub-cylcing steps
+=======
+        test.adapt = f.adapt # Sets retraining steps
+        
+        #test.subcycle = True # turn on subcycling
+        test.threshadapt = True
+
+>>>>>>> 7731aa002c82699f665eca5dc022239646e5073c
         #test.debug = True
         test.regul = f.regul
         test.threshold = f.threshold
