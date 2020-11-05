@@ -53,6 +53,8 @@ class Stars_sim:
         self.threshold = .95 #set active subspace total svd threshold
         self.subcycle_counter = 0 # for subcycling (for now) --J
         
+        self.norm_surrogate = True #normalize surrogate to -1,1 and compute.
+        
         
         #preallocate history arrays for efficiency
         self.x_noise = None
@@ -215,7 +217,7 @@ class Stars_sim:
                 #if poly[0] > - 1 / (4 * (self.adim + 4)):
                 
                 # If too slowly, user can optionally apply either Adaptive Thresholding or Active Subcycling.
-                if poly[0] > - 10 * self.dim * self.sigma / (2 ** 0.5):
+                if poly[0] > -self.dim * self.sigma / (2 ** 0.5):
                     print('Iteration ',self.iter)
                     print('Bad Average recent slope',poly[0])
                     
@@ -235,11 +237,8 @@ class Stars_sim:
                         self.adim = self.dim - self.adim
                         print('active subcycling has kicked in, dim of I is:  ',self.adim)
                         
-                        inactive_proj = self.active @ self.active.T
-                        for i in range(0,np.shape(self.xhist)[1]):
-                            self.xhist[:,i] = inactive_proj @ self.xhist[:,i]
-                        self.x = inactive_proj @ self.x
-                        
+                        #inactive_proj = self.active @ self.active.T
+                    
                         self.get_mu_star()
                         self.get_h()
                         self.adapt = self.maxit
@@ -274,21 +273,8 @@ class Stars_sim:
         ss=ac.subspaces.Subspaces()
         
 
-        # we now include training data x_noise,f_noise from ECNoise
-        if self.x_noise is None:
-            if self.Window is None:
-                train_x=np.hstack((self.xhist[:,0:self.iter+1],self.yhist[:,0:self.iter]))
-                train_f=np.hstack((self.fhist[0:self.iter+1],self.ghist[0:self.iter]))
-            else:
-                train_x=np.hstack((self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
-                train_f=np.hstack((self.fhist[-self.Window:],self.ghist[-self.Window:]))
-        else:
-            if self.Window is None:
-                train_x=np.hstack((self.x_noise,self.xhist[:,1:self.iter+1],self.yhist[:,0:self.iter]))
-                train_f=np.hstack((self.f_noise,self.fhist[1:self.iter+1],self.ghist[0:self.iter]))
-            else:
-                train_x=np.hstack((self.x_noise,self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
-                train_f=np.hstack((self.f_noise,self.fhist[-self.Window:],self.ghist[-self.Window:]))            
+        train_x,train_f = assemble_data()
+    
         
         if self.verbose:
             print('Computing Active Subspace after ',self.iter,' steps')
@@ -300,16 +286,10 @@ class Stars_sim:
                 print('Using ',self.train_method)
     
         #Normalize data for as
-        lb = np.amin(train_x,axis=1).reshape(-1,1)
-        ub = np.amax(train_x,axis=1).reshape(-1,1)
-        nrm_data=ac.utils.misc.BoundedNormalizer(lb,ub)
-
-        #print(lb,ub)
-        train_x=nrm_data.normalize(train_x.T)
-        if self.debug is True:
-            print(np.amax(train_x, axis = 0))
-            print(np.amin(train_x, axis = 0))
-        #print(train_x.shape)
+        if self.norm_surrogate is True:
+            train_x = normalize_data(train_x)
+        else:
+            train_x = train_x.T
         
         
         
@@ -369,6 +349,8 @@ class Stars_sim:
         
             #print('Condition number',gquad.cond)
             print('Rsqr',gquad.Rsqr)
+            self.surrogate = gquad
+            self.surr_domain = np.hstack((lb,ub))
 
         if self.set_dim is False:
 
@@ -399,3 +381,28 @@ class Stars_sim:
         self.get_h()
 
 
+    def assemble_data(self):
+        if self.x_noise is None:
+            if self.Window is None:
+                train_x=np.hstack((self.xhist[:,0:self.iter+1],self.yhist[:,0:self.iter]))
+                train_f=np.hstack((self.fhist[0:self.iter+1],self.ghist[0:self.iter]))
+            else:
+                train_x=np.hstack((self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
+                train_f=np.hstack((self.fhist[-self.Window:],self.ghist[-self.Window:]))
+        else:
+            if self.Window is None:
+                train_x=np.hstack((self.x_noise,self.xhist[:,1:self.iter+1],self.yhist[:,0:self.iter]))
+                train_f=np.hstack((self.f_noise,self.fhist[1:self.iter+1],self.ghist[0:self.iter]))
+            else:
+                train_x=np.hstack((self.x_noise,self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
+                train_f=np.hstack((self.f_noise,self.fhist[-self.Window:],self.ghist[-self.Window:]))
+        return train_x,train_f
+    
+    def normalize_data(train_x):
+    
+        lb = np.amin(train_x,axis=1).reshape(-1,1)
+        ub = np.amax(train_x,axis=1).reshape(-1,1)
+        nrm_data=ac.utils.misc.BoundedNormalizer(lb,ub)
+        train_x=nrm_data.normalize(train_x.T)
+    
+        return train_x
