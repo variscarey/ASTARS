@@ -181,7 +181,8 @@ for f in {nest}:
         test.train_method = 'GQ'
         test.adapt = f.adapt # Sets retraining steps
         
-        test.subcycle = True # turn on subcycling
+        #test.subcycle = True # turn on subcycling
+        test.threshadapt = True
 
         #test.debug = True
         test.regul = f.regul

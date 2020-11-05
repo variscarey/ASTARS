@@ -26,7 +26,9 @@ class Stars_sim:
         self.train_method = train_method
         self.set_dim = False
         self.subcycle = False
+        self.threshadapt = False
         self.cycle_win = 10
+        self.active_step = 0
         
         #default internal settings, can be modified.
         self.update_L1 = False
@@ -43,6 +45,7 @@ class Stars_sim:
             self.x = self.x.flatten()
         self.dim = self.x.size
         self.threshold = .95 #set active subspace total svd threshold
+        self.subcycle_counter = 0 # for subcycling (for now) --J
         
         #preallocate history arrays for efficiency
         self.x_noise = None
@@ -130,10 +133,12 @@ class Stars_sim:
             if self.active is None or (self.adapt > 0  and self.iter%self.adapt == 0):
                 if self.train_method is None or self.train_method == 'LL':
                     if 2*self.iter > self.dim:
-                        self.compute_active()   
+                        self.compute_active() 
+                        self.active_step = self.iter  
                 elif self.train_method == 'GQ':
                     if 2*self.iter + 1 > .5*(2 + self.dim) * (1+self.dim):
                         self.compute_active()
+                        self.active_step = self.iter
                         
         # Compute mult_mu_star_k (if needed)
         if self.mult is False:
@@ -177,6 +182,49 @@ class Stars_sim:
         self.yhist[:,self.iter-1]=y
         self.ghist[self.iter-1]=g
         self.L1_hist[self.iter-1]=self.L1
+        
+        # Check for stagnation of convergence regardless of method
+        if (self.subcycle is True or self.threshadapt is True) and self.active is not None:
+            if self.iter - self.active_step > np.minimum(10, self.adapt/2) and self.threshold<1-self.var:
+            
+                fsamp = self.fhist[-self.cycle_win+self.iter+1:self.iter+1]
+                poly = np.polyfit(np.arange(self.cycle_win),fsamp,1)
+                
+                # Old tries at slowness check:
+                #if poly[0] > -4*(self.adim+4)*self.L1/(self.iter+1):
+                #if poly[0] > -4*self.L1*(self.adim+4)/(5*np.sqrt(2)):
+                #if poly[0] > - 1 / (4 * (self.adim + 4)):
+                
+                # If too slowly, user can optionally apply either Adaptive Thresholding or Active Subcycling.
+                if poly[0] > - 10 * self.dim * self.sigma / (2 ** 0.5):
+                    print('Iteration ',self.iter)
+                    print('Bad Average recent slope',poly[0])
+                    
+                    # Adaptive Thresholding
+                    if self.threshadapt is True:
+                        norm_e_vals = self.eigenvals / np.sum(self.eigenvals)
+                        self.adim += 1
+                        self.threshold = np.sum(norm_e_vals[0:self.adim])
+                        self.active = self.directions[:,0:self.adim]
+                        self.get_mu_star()
+                        self.get_h()
+                        print('Threshold was increased to', self.threshold, 'for the user due to slow convergence.')
+                    
+                    # Active Subcycling
+                    if self.subcycle is True and self.subcycle_counter < 1 and self.iter > 500:
+                        self.active = self.directions[:,self.adim:self.dim]
+                        self.adim = self.dim - self.adim
+                        print('active subcycling has kicked in, dim of I is:  ',self.adim)
+                        
+                        inactive_proj = self.active @ self.active.T
+                        for i in range(0,np.shape(self.xhist)[1]):
+                            self.xhist[:,i] = inactive_proj @ self.xhist[:,i]
+                        self.x = inactive_proj @ self.x
+                        
+                        self.get_mu_star()
+                        self.get_h()
+                        self.adapt = self.maxit
+                        self.subcycle_counter += 1
     
         if self.update_L1 is True and (self.active is None or self.train_method != 'GQ') and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
@@ -206,20 +254,7 @@ class Stars_sim:
 
         ss=ac.subspaces.Subspaces()
         
-        #subcycling check
-        if self.subcycle is True and self.active is not None:
-            #check for stagnation of convergence
-            fsamp = self.fhist[-self.cycle_win+self.iter+1:self.iter+1]
-        
-            poly = np.polyfit(np.arange(self.cycle_win),fsamp,1)
-            ## how much are we decreasing?
-            #if poly[0] > -4*(self.adim+4)*self.L1/(self.iter+1):
-            if poly[0] > -250*self.sigma*(self.adim)/(5*np.sqrt(2)):
-                print('Iteration ',self.iter)
-                print('Bad Average recent slope',poly[0])
-                if self.threshold < 1-1E-4:
-                    self.threshold += 0.005
-                    print('Threshold was increased to', self.threshold, 'for the user due to slow convergence.')
+
         # we now include training data x_noise,f_noise from ECNoise
         if self.x_noise is None:
             if self.Window is None:
@@ -333,7 +368,7 @@ class Stars_sim:
             self.L1 = sur_L1
 
         self.active=ss.eigenvecs[:,0:self.adim]
- 
+        self.eigenvals = ss.eigenvals
         self.wts=ss.eigenvals
         self.directions = ss.eigenvecs
         ##update ASTARS parameters
