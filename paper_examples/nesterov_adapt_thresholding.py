@@ -36,7 +36,7 @@ class nesterov_2:
         self.name = 'Example 3: STARS vs FAASTARS With Adaptive Thresholding'
         self.fstar = 0
         self.maxit = 20000
-        self.ntrials = 5 #50
+        self.ntrials = 1 #50
         self.adapt = 2*dim
         self.regul = None # maybe - self.sig**2
         self.threshold = .9    
@@ -52,8 +52,37 @@ class nesterov_2:
 
         return ans
         
+class test_weights:
+    
+    def __init__(self, dim = 10, sig = 1E-3):
+        self.dim = dim
+        self.sig = sig
+        self.L1 = 200
+        self.var = self.sig**2
+        self.nickname = 'test_weights'
+        self.name = 'Example 4: STARS vs FAASTARS With Adaptive Thresholding'
+        self.fstar = 0
+        self.maxit = 5000
+        self.ntrials = 1 #50
+        self.adapt = 2*dim
+        self.regul = None # maybe - self.sig**2
+        self.threshold = .9    
+        self.initscl = 1
+    
+    def __call__(self,x):
+        
+        temp = np.arange(self.dim,dtype=float)
+        weights = np.zeros(dim)
+        weights[0], weights[1] = 100, 1
+        y = np.copy(x)
+        y *= y
+        ans = np.dot(weights,y) +self.sig*np.random.randn(1)
+
+        return ans        
+        
 #plotting parameters and definitions
 nest = nesterov_2()
+wt_fn = test_weights()
 
 params = {'legend.fontsize': 28,'legend.handlelength': 3}
 plt.rcParams["figure.figsize"] = (60,40)
@@ -71,11 +100,12 @@ active_stars_ref, rf_ls = 'blue', ':'
 # Start the clock!
 start = timeit.default_timer()
 
-for f in {nest}:
+for f in {wt_fn}:
 
     dim = f.dim
-    np.random.seed(9)
-    init_pt = f.initscl*np.random.randn(dim)
+    #np.random.seed(9)
+    #init_pt = f.initscl*np.random.randn(dim)
+    init_pt = np.ones(dim)
     ntrials = f.ntrials
     maxit = f.maxit
 
@@ -176,12 +206,12 @@ for f in {nest}:
     plt.legend()
     plt.show()
     
-    plt.plot(test.xhist[-2,:], label='FAASTARS (No Extensions, $\\tau = 0.9$)')
-    plt.plot(test2.xhist[-2,:], label = 'FAASTARS (Adaptive Thresholding)')
-    plt.plot(test3.xhist[-2,:], label = 'FAASTARS (Active Subcycling)') 
+    plt.plot(test.xhist[1,-1000:], label='FAASTARS (No Extensions, $\\tau = 0.9$)')
+    plt.plot(test2.xhist[1,-1000:], label = 'FAASTARS (Adaptive Thresholding)')
+    plt.plot(test3.xhist[1,-1000:], label = 'FAASTARS (Active Subcycling)') 
     plt.title(f.name)
     plt.xlabel('$k$, iteration count')
-    plt.ylabel('$\lambda^{(k)}_8$') 
+    plt.ylabel('$\lambda^{(k)}_2$') 
     plt.legend()  
     plt.show()
 
