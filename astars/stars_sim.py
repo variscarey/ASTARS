@@ -45,7 +45,7 @@ class Stars_sim:
             self.x = self.x.flatten()
         self.dim = self.x.size
         self.threshold = .95 #set active subspace total svd threshold
-        self.subcycle_counter = 0 # for subcycling (for now) --J
+        self.subcycle_on = False # for subcycling (for now) --J
         
         #preallocate history arrays for efficiency
         self.x_noise = None
@@ -190,13 +190,16 @@ class Stars_sim:
                 fsamp = self.fhist[-self.cycle_win+self.iter+1:self.iter+1]
                 poly = np.polyfit(np.arange(self.cycle_win),fsamp,1)
                 
+                # PRINT SUBSPACE DIST FOR DIAGNOSTICS
+                
+                
                 # Old tries at slowness check:
                 #if poly[0] > -4*(self.adim+4)*self.L1/(self.iter+1):
                 #if poly[0] > -4*self.L1*(self.adim+4)/(5*np.sqrt(2)):
                 #if poly[0] > - 1 / (4 * (self.adim + 4)):
                 
                 # If too slowly, user can optionally apply either Adaptive Thresholding or Active Subcycling.
-                if poly[0] > - 10 * self.dim * self.sigma / (2 ** 0.5):
+                if poly[0] > - 10  * self.dim * self.sigma / (2 ** 0.5):
                     print('Iteration ',self.iter)
                     print('Bad Average recent slope',poly[0])
                     
@@ -211,7 +214,7 @@ class Stars_sim:
                         print('Threshold was increased to', self.threshold, 'for the user due to slow convergence.')
                     
                     # Active Subcycling
-                    if self.subcycle is True and self.subcycle_counter < 1 and self.iter > 500:
+                    if self.subcycle is True and self.subcycle_on is False:
                         self.active = self.directions[:,self.adim:self.dim]
                         self.adim = self.dim - self.adim
                         print('active subcycling has kicked in, dim of I is:  ',self.adim)
@@ -219,12 +222,17 @@ class Stars_sim:
                         inactive_proj = self.active @ self.active.T
                         for i in range(0,np.shape(self.xhist)[1]):
                             self.xhist[:,i] = inactive_proj @ self.xhist[:,i]
-                        self.x = inactive_proj @ self.x
+                        #self.x = inactive_proj @ self.x
                         
                         self.get_mu_star()
                         self.get_h()
-                        self.adapt = self.maxit
-                        self.subcycle_counter += 1
+                        self.adapt = 0 # turn off adapt
+                        self.subcycle_on = True
+                    elif self.subcycle_on is True:
+                        self.adapt = self.dim
+                        self.compute_active()
+                        self.subcycle_on = False
+                    
     
         if self.update_L1 is True and (self.active is None or self.train_method != 'GQ') and self.mult is False:
             #call get update_L1:  approximates by regularized quadratic
