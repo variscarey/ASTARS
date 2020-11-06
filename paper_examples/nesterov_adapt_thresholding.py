@@ -62,12 +62,14 @@ class test_weights:
         self.nickname = 'test_weights'
         self.name = 'Example 4: STARS vs FAASTARS With Adaptive Thresholding'
         self.fstar = 0
-        self.maxit = 5000
+        self.maxit = 1000
         self.ntrials = 1 #50
         self.adapt = 2*dim
         self.regul = None # maybe - self.sig**2
         self.threshold = .9    
         self.initscl = 1
+        
+        
     
     def __call__(self,x):
         
@@ -171,6 +173,8 @@ for f in {wt_fn}:
             test2.step()
             test3.step()
             
+            print(test.iter,'Iteration')
+            
             if test.iter % 200 == 0:
                 print(test2.eigenvals)
 
@@ -215,3 +219,14 @@ for f in {wt_fn}:
     plt.legend()  
     plt.show()
 
+
+for fa in [f2_avr,f3_avr,f4_avr]:
+    slopes = []
+    for j in range(80,f2_avr.size):
+        fsamp = fa[j-20:j]
+        poly = np.polyfit(np.arange(20),fsamp,1)
+        slopes.append(poly[0])
+    slopes = np.array(slopes)
+    plt.plot(slopes)
+plt.axhline(-test.sigma*f.dim)
+plt.show()

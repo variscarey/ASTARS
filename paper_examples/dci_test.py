@@ -43,7 +43,7 @@ class data_misfit:
         else:
             self.weights = weights
                 
-        self.maxit = 2*dim**2
+        self.maxit = 10*dim**2
         self.ntrials = 1000
         self.adapt = 2*dim
         
@@ -51,7 +51,8 @@ class data_misfit:
         self.initscl = 1.0
                         
     def __call__(self, x):
-            return (self.qoi(x)-self.data)**2 # + self.sig*np.random.randn(1)
+        temp = x.flatten()
+        return (self.qoi(temp)-self.data)**2 # + self.sig*np.random.randn(1)
 
     
     def qoi(self,x):
@@ -61,9 +62,10 @@ class data_misfit:
 
 
 #plotting parameters and definitions
-wt = np.zeros(10)
+wt = np.zeros(40)
 wt[0] = 1
-dci = data_misfit(dim=10, weights = wt)
+#dci = data_misfit(dim=10, weights = wt)
+dci = data_misfit(dim=40)
 
 params = {'legend.fontsize': 28,'legend.handlelength': 3}
 plt.rcParams["figure.figsize"] = (60,40)
@@ -88,8 +90,8 @@ for f in {dci}:
     np.random.seed(9)
     init_pt = np.zeros(f.dim) #prior mean
     #init_pt /= np.linalg.norm(init_pt)
-    ntrials = 20
-    maxit = 1000
+    ntrials = 5
+    maxit = 3000
 
 
     f_avr = np.zeros(maxit+1)
@@ -103,6 +105,7 @@ for f in {dci}:
         test.STARS_only = True
         test.get_mu_star()
         test.get_h()
+        test.update_L1 = True
         test2 = Stars_sim(f, init_pt, L1 = None, var = None, verbose = False, maxit = maxit)
         test2.update_L1 = True
         #test.STARS_only = True
@@ -110,12 +113,20 @@ for f in {dci}:
         test2.get_h()
         test2.train_method = 'GQ'
         test2.adapt = 2*f.dim
-        test2.regul = test2.sigma
-  
+        test2.regul = test2.var
+        #test2.regul = None
+    
+        dist = None
         while test.iter < test.maxit:
             test.step()
             test2.step()
-    
+            if test2.active is not None:
+                temp = np.array(subspace_dist(test2.active,f.active))
+                if dist is None:
+                    dist = np.copy(temp)
+                else:
+                    dist = np.append(dist,temp)
+                     
     #update average of f
         f_avr += test.fhist
         f2_avr += test2.fhist
