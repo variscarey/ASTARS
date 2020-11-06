@@ -273,7 +273,7 @@ class Stars_sim:
         ss=ac.subspaces.Subspaces()
         
 
-        train_x,train_f = assemble_data()
+        train_x,train_f = self.assemble_data()
     
         
         if self.verbose:
@@ -287,7 +287,7 @@ class Stars_sim:
     
         #Normalize data for as
         if self.norm_surrogate is True:
-            train_x = normalize_data(train_x)
+            train_x = self.normalize_data(train_x)
         else:
             train_x = train_x.T
         
@@ -305,8 +305,9 @@ class Stars_sim:
                 # normalization assumes [-1,1] inputs from above
             
                 C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
-                D = np.diag(1.0/(.5*(ub-lb).flatten()))
-                C = D @ C @ D
+                if self.norm_surrogate is True:
+                    D = np.diag(1.0/(.5*(self.ub-self.lb).flatten()))
+                    C = D @ C @ D
                 ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
                 
             elif train_f.size > (self.dim + 1):
@@ -343,14 +344,16 @@ class Stars_sim:
             # normalization assumes [-1,1] inputs from above
             
             C = np.outer(b, b.transpose()) + 1.0/3.0*np.dot(A, A.transpose())
-            D = np.diag(1.0/(.5*(ub-lb).flatten()))
-            C = D @ C @ D
+            if self.norm_surrogate is True:
+                D = np.diag(1.0/(.5*(self.ub-self.lb).flatten()))
+                C = D @ C @ D
             ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
         
             #print('Condition number',gquad.cond)
             print('Rsqr',gquad.Rsqr)
             self.surrogate = gquad
-            self.surr_domain = np.hstack((lb,ub))
+            if self.norm_surrogate is True:
+                self.surr_domain = np.hstack((self.lb,self.ub))
 
         if self.set_dim is False:
 
@@ -398,11 +401,14 @@ class Stars_sim:
                 train_f=np.hstack((self.f_noise,self.fhist[-self.Window:],self.ghist[-self.Window:]))
         return train_x,train_f
     
-    def normalize_data(train_x):
+    def normalize_data(self,train_x):
     
         lb = np.amin(train_x,axis=1).reshape(-1,1)
         ub = np.amax(train_x,axis=1).reshape(-1,1)
-        nrm_data=ac.utils.misc.BoundedNormalizer(lb,ub)
+        self.lb = lb
+        self.ub = ub
+        nrm_data=ac.utils.misc.BoundedNormalizer(self.lb,self.ub)
         train_x=nrm_data.normalize(train_x.T)
+        
     
         return train_x
