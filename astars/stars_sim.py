@@ -247,6 +247,7 @@ class Stars_sim:
                         self.subcycle_on = True
                     elif self.subcycle_on is True:
                         self.adapt = self.dim
+                        self.Window = 2*self.dim**2
                         print('Subcycle ended, recomputing active Subspace at iteration', self.iter)
                         self.compute_active()
                         self.subcycle_on = False
@@ -393,20 +394,19 @@ class Stars_sim:
 
 
     def assemble_data(self):
-        if self.x_noise is None:
-            if self.Window is None:
+        if self.Window is not None: 
+            start = self.iter - self.Window
+            train_x=np.hstack((self.xhist[:,start:self.iter+1],self.yhist[:,start:self.iter]))
+            train_f=np.hstack((self.fhist[start:self.iter+1],self.ghist[start,self.iter]))
+        else:
+            if self.noise is None:
                 train_x=np.hstack((self.xhist[:,0:self.iter+1],self.yhist[:,0:self.iter]))
                 train_f=np.hstack((self.fhist[0:self.iter+1],self.ghist[0:self.iter]))
+ 
             else:
-                train_x=np.hstack((self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
-                train_f=np.hstack((self.fhist[-self.Window:],self.ghist[-self.Window:]))
-        else:
-            if self.Window is None:
                 train_x=np.hstack((self.x_noise,self.xhist[:,1:self.iter+1],self.yhist[:,0:self.iter]))
                 train_f=np.hstack((self.f_noise,self.fhist[1:self.iter+1],self.ghist[0:self.iter]))
-            else:
-                train_x=np.hstack((self.x_noise,self.xhist[:,-self.Window:],self.yhist[:,-self.Window:]))
-                train_f=np.hstack((self.f_noise,self.fhist[-self.Window:],self.ghist[-self.Window:]))
+            
         return train_x,train_f
     
     def normalize_data(self,train_x):
