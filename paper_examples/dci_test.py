@@ -49,6 +49,8 @@ class data_misfit:
         
         self.threshold = 0.99
         self.initscl = 1.0
+        self.inputs = None
+        self.outputs = None
                         
     def __call__(self, x):
         temp = x.flatten()
@@ -56,7 +58,15 @@ class data_misfit:
 
     
     def qoi(self,x):
-        return np.dot(self.weights,x)  + self.sig*np.random.randn(1)
+        ans = np.dot(self.weights,x)  + self.sig*np.random.randn(1)
+        if self.inputs is None:
+            self.inputs = np.array(x).reshape(1,x.size)
+            self.outputs = np.array(ans).reshape(-1,1)
+        else:
+            self.inputs = np.vstack((self.inputs,x.reshape(1,x.size)))
+            self.outputs = np.vstack((self.outputs,np.array(ans).reshape(-1,1)))
+        
+        return ans
 
     
 
@@ -65,7 +75,7 @@ class data_misfit:
 wt = np.zeros(40)
 wt[0] = 1
 #dci = data_misfit(dim=10, weights = wt)
-dci = data_misfit(dim=40)
+dci = data_misfit(dim=10)
 
 params = {'legend.fontsize': 28,'legend.handlelength': 3}
 plt.rcParams["figure.figsize"] = (60,40)
@@ -87,11 +97,11 @@ start = timeit.default_timer()
 
 for f in {dci}:
 
-    np.random.seed(9)
+    #np.random.seed(9)
     init_pt = np.zeros(f.dim) #prior mean
     #init_pt /= np.linalg.norm(init_pt)
-    ntrials = 5
-    maxit = 3000
+    ntrials = 3
+    maxit = 500
 
 
     f_avr = np.zeros(maxit+1)
@@ -106,7 +116,7 @@ for f in {dci}:
         test.get_mu_star()
         test.get_h()
         test.update_L1 = True
-        test2 = Stars_sim(f, init_pt, L1 = None, var = None, verbose = False, maxit = maxit)
+        test2 = Stars_sim(f, init_pt, L1 = None, var = None, verbose = True, maxit = maxit)
         test2.update_L1 = True
         #test.STARS_only = True
         test2.get_mu_star()
@@ -114,9 +124,12 @@ for f in {dci}:
         test2.train_method = 'GQ'
         test2.adapt = 2*f.dim
         test2.regul = test2.var
+        test2.pad_train = 2.0
+        test2.explore_weight = 2.0
         #test2.regul = None
     
         dist = None
+        L1_hist = None
         while test.iter < test.maxit:
             test.step()
             test2.step()
@@ -124,8 +137,10 @@ for f in {dci}:
                 temp = np.array(subspace_dist(test2.active,f.active))
                 if dist is None:
                     dist = np.copy(temp)
+                    L1_hist = np.copy(np.array(test2.L1))
                 else:
                     dist = np.append(dist,temp)
+                    L1_hist = np.append(L1_hist,test2.L1)
                      
     #update average of f
         f_avr += test.fhist
@@ -152,8 +167,16 @@ for f in {dci}:
  
     plt.semilogy(np.abs(f_avr-f.fstar),lw = 5,label='DCI',color=stars_full, ls=sf_ls)
     plt.semilogy(np.abs(f2_avr-f.fstar),lw = 5,label='DCI ASTARS',color='blue', ls=sf_ls)
+    for data in test2.as_comp_step:
+        plt.axvline(data)
     plt.title(f.name)
     plt.xlabel('$k$, iteration count')
     plt.ylabel('$|f(\lambda^{(k)})-f^*|$')
     plt.legend()
 plt.show()    
+
+#fit active subspace using all data
+sub = ss.subspaces.Subspaces()
+g_surr = ss.utils.response_surfaces.PolynomialApproximation(N=2)
+g_surr.train(dci.inputs, dci.outputs, regul = test2.regul) #regul = self.var)
+mud_grad = g_surr.predict(trial_final.reshape(1,trial_final.size),compgrad = True)

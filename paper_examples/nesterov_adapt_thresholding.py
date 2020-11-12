@@ -35,7 +35,7 @@ class nesterov_2:
         self.nickname = 'nest_2'
         self.name = 'Example 3: STARS vs FAASTARS With Adaptive Thresholding'
         self.fstar = 0
-        self.maxit = 20000
+        self.maxit = 1000
         self.ntrials = 1 #50
         self.adapt = 2*dim
         self.regul = None # maybe - self.sig**2
@@ -62,8 +62,9 @@ class test_weights:
         self.nickname = 'test_weights'
         self.name = 'Example 4: STARS vs FAASTARS With Adaptive Thresholding'
         self.fstar = 0
-        self.maxit = 1000
-        self.ntrials = 1 #50
+        self.maxit = 500
+        self.ntrials = 1
+        #50
         self.adapt = 2*dim
         self.regul = None # maybe - self.sig**2
         self.threshold = .9    
@@ -73,9 +74,9 @@ class test_weights:
     
     def __call__(self,x):
         
-        temp = np.arange(self.dim,dtype=float)
+        #temp = np.arange(self.dim,dtype=float)
         weights = np.zeros(dim)
-        weights[0], weights[1] = 100, 1
+        weights[0], weights[1], weights[2] = 100, 10, 1
         y = np.copy(x)
         y *= y
         ans = np.dot(weights,y) +self.sig*np.random.randn(1)
@@ -135,50 +136,71 @@ for f in {wt_fn}:
     # FAASTARS (3 scenarios: no extensions, adaptive thresholding, and active subcycling)
     for trial in range(ntrials):
         #sim setup
-        test = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit, true_as = None)
+        test4 = Stars_sim(f, init_pt, L1 =f.L1, var = f.var, verbose = False, maxit = maxit, true_as = None)
         test2 = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit, true_as = None)
         test3 = Stars_sim(f, init_pt, L1 = f.L1, var = f.var, verbose = False, maxit = maxit, true_as = None)
         
-        test.get_mu_star()
-        test.get_h()
+        test4.get_mu_star()
+        test4.get_h()
         test2.get_mu_star()
         test2.get_h()  
         test3.get_mu_star()
         test3.get_h()   
+        test3.lasso = True
+        test2.lasso = True
                      
         # adapt every f.adapt timesteps using quadratic(after inital burn)
-        test.train_method = 'GQ'
+        test4.train_method = 'GQ'
         test2.train_method = 'GQ'
         test3.train_method = 'GQ'
         
-        test.adapt = f.adapt # Sets retraining steps
+        test4.adapt = f.adapt # Sets retraining steps
         test2.adapt = f.adapt
         test3.adapt = f. adapt
+        
+        #test.update_L1 = True
+        #test2.update_L1 = True
+        #test3.update_L1 = True
         
         # Make test2 our adaptive thresholding trial, and test3 our subcycling trial
         test2.threshadapt = True
         test3.subcycle = True
-
-        test.regul = f.regul
-        test2.regul = f.regul
-        test3.regul = f.regul
+        test3.sub_method = 2
+        test2.slope_weight = .1
+        test3.slope_weight = .1
         
-        test.threshold = f.threshold
+        test2.pad_train = 2.0
+        test2.explore_weight = 2.0
+        test3.pad_train = 2.0
+        test3.explore_weight = 2.0
+
+        #test4.regul = f.regul
+        #test2.regul = f.regul
+        #test3.regul = f.regul
+        
+        
+        
+        test4.threshold = f.threshold
         test2.threshold = f.threshold
         test3.threshold = f.threshold
         
         # do 100 steps
-        while test.iter < test.maxit:
-            test.step()
+        while test4.iter < test.maxit:
+            test4.step()
             test2.step()
             test3.step()
             
-            print(test.iter,'Iteration')
+            #pprint(test.iter,'Iteration')
             
-            if test.iter % 200 == 0:
+            #if test.iter == 100:
+            #    test.L1 = 2.0
+            #    test2.L1 = 2.0
+            #    test3.L1 = 2.0
+            
+            if test4.iter % 200 == 0:
                 print(test2.eigenvals)
 
-        f2_avr += test.fhist
+        f2_avr += test4.fhist
         f3_avr += test2.fhist
         f4_avr += test3.fhist
         
@@ -209,24 +231,27 @@ for f in {wt_fn}:
     plt.ylabel('$|f(\lambda^{(k)})-f^*|$')
     plt.legend()
     plt.show()
-    
-    plt.plot(test.xhist[1,-1000:], label='FAASTARS (No Extensions, $\\tau = 0.9$)')
-    plt.plot(test2.xhist[1,-1000:], label = 'FAASTARS (Adaptive Thresholding)')
-    plt.plot(test3.xhist[1,-1000:], label = 'FAASTARS (Active Subcycling)') 
+
+for i in range(3):   
+    plt.plot(test4.xhist[i,-1000:], label='FAASTARS (No Extensions, $\\tau = 0.9$)')
+    plt.plot(test2.xhist[i,-1000:], label = 'FAASTARS (Adaptive Thresholding)')
+    plt.plot(test3.xhist[i,-1000:], label = 'FAASTARS (Active Subcycling)') 
     plt.title(f.name)
     plt.xlabel('$k$, iteration count')
-    plt.ylabel('$\lambda^{(k)}_2$') 
+    y_str = '$\lambda_'+str(i)+'^{(k)}$'
+    plt.ylabel(y_str) 
     plt.legend()  
     plt.show()
+    
 
 
-for fa in [f2_avr,f3_avr,f4_avr]:
+for fa in [f_avr,f2_avr,f3_avr,f4_avr]:
     slopes = []
     for j in range(80,f2_avr.size):
         fsamp = fa[j-20:j]
         poly = np.polyfit(np.arange(20),fsamp,1)
         slopes.append(poly[0])
     slopes = np.array(slopes)
-    plt.plot(slopes)
+    plt.semilogy(np.absolute(slopes))
 plt.axhline(-test.sigma*f.dim)
 plt.show()

@@ -31,8 +31,9 @@ def find_active(eigval,eigvec,threshold = .95, verbose = False, dimensions = Non
     while svar < target and adim<dim:
         svar += eigval[adim]
         adim+=1
-    print ('Subspace Dimension', adim)
+    #print ('Subspace Dimension', adim)
     if verbose: 
+        print ('Subspace Dimension', adim)
         print(eigval[0:adim])
         print('Subspace',eigvec[:,0:adim])
 
