@@ -26,7 +26,7 @@ user_file_path = '/home/ccm/Desktop/'
 
 
 class data_misfit:
-    def __init__(self, dim = 40, weights= None, data = np.exp(2), sig = 1E-3):
+    def __init__(self, dim = 40, weights= None, data = 8.0, sig = 1E-3):
         self.dim = dim
         self.L1 = np.maximum(4,12*data) #self.dim**2 #approx
         self.sig = sig
@@ -59,7 +59,7 @@ class data_misfit:
 
     
     def qoi(self,x):
-        ans = np.exp(np.dot(self.weights,x)) + self.sig*np.random.rand(1)
+        ans = np.dot(self.weights,x)**3 + self.sig*np.random.rand(1)
         if self.inputs is None:
             self.inputs = np.array(x).reshape(1,x.size)
             self.outputs = np.array(ans).reshape(-1,1)
@@ -161,7 +161,7 @@ for f in {dci}:
         f_avr += test.fhist
         f2_avr += test2.fhist
         #f3_avr += test3.fhist
-        trial_final += test2.active@test2.active.T@test2.x
+        #trial_final += test2.active@test2.active.T@test2.x
         #final answer 
         #project test2 solution
         
@@ -193,6 +193,6 @@ plt.show()
 
 #fit active subspace using recent data
 sub = ss.subspaces.Subspaces()
-g_surr = ss.utils.response_surfaces.PolynomialApproximation(N=6)
+g_surr = ss.utils.response_surfaces.PolynomialApproximation(N=3)
 g_surr.train(dci.inputs, dci.outputs, regul = test2.regul) #regul = self.var)
-mud_grad = g_surr.predict(trial_final.reshape(1,trial_final.size),compgrad = True)
+mud_grad = g_surr.predict(test2.x.reshape(1,trial_final.size),compgrad = True)
