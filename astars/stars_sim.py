@@ -13,7 +13,7 @@ import active_subspaces as ac
 
 class Stars_sim:
     
-    def __init__(self,f,x_start,L1=None,var=None,mult=False,verbose=False,maxit=100,train_method=None,true_as=None): 
+    def __init__(self,f,x_start,f_obj = None, L1=None,var=None,mult=False,verbose=False,maxit=100,train_method=None,true_as=None): 
 
         #constructor input processing
         self.f = f
@@ -30,6 +30,7 @@ class Stars_sim:
         self.threshadapt = False
         self.cycle_win = 10
         self.lasso = False
+        self.f_obj = f_obj
         
         self.as_comp_step = None
         
@@ -159,7 +160,10 @@ class Stars_sim:
                     if 2*self.iter + 1 > self.pad_train *( .5*(2 + self.dim) * (1+self.dim)):
                         self.compute_active()
                         self.active_step = self.iter
-                        
+                elif self.train_method == 'GL':
+                    if 2*self.iter + 1 > self.pad_train*.5 *(self.dim +1):
+                        self.compute_active()
+                        self.active_step = self.iter
         # Compute mult_mu_star_k (if needed)
         if self.mult is False:
             mu_star = self.mu_star
@@ -339,8 +343,10 @@ class Stars_sim:
 
         ss=ac.subspaces.Subspaces()
         
-
-        train_x,train_f = self.assemble_data()
+        if self.f_obj is None:
+            train_x,train_f = self.assemble_data()
+        else:
+            train_x,train_f = self.f_obj.inputs, self.f_obj.outputs
     
         if self.project is True:
             train_x = train_x @ self.directions
@@ -428,6 +434,24 @@ class Stars_sim:
             self.surrogate = gquad
             if self.norm_surrogate is True:
                 self.surr_domain = np.hstack((self.lb,self.ub))
+        elif self.train_method == 'GL':
+            #use global linear surrogate
+            glin = ac.utils.response_surfaces.PolynomialApproximation(N=1)
+            glin.train(train_x, train_f, regul = self.regul, lasso = self.lasso) #regul = self.var)
+
+            # get regression coefficients
+            b = glin.g
+
+            # compute variation of gradient of f, analytically
+            # normalization assumes [-1,1] inputs from above
+            
+            C = np.outer(b, b.transpose()) # + 1.0/3.0*np.dot(A, A.transpose())
+            if self.norm_surrogate is True:
+                D = np.diag(1.0/(.5*(self.ub-self.lb).flatten()))
+                C = D @ C @ D
+            ss.eigenvals,ss.eigenvecs = ac.subspaces.sorted_eigh(C)
+            
+            
 
         if self.set_dim is False:
 
@@ -464,7 +488,7 @@ class Stars_sim:
         else:
             self.inactive = None
         
-        self.wts = 1/np.sqrt(ss.eigenvals.flatten())
+        self.wts = 1/np.sqrt(ss.eigenvals[0:self.adim].flatten())
         self.wts /= self.wts[0]
         self.wts = np.minimum(10*np.ones(self.wts.shape),self.wts)
 
