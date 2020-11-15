@@ -213,11 +213,15 @@ print('mud_point',mud_point)
 print('mud covar',mud_covar)
 
 #straight up surrogate on N(0,1) samples test?
-xdata = np.random.randn(dci.dim,1000)
-fdata = np.zeros(1000)
+xdata = np.random.randn(dci.dim,2*maxit)
+fdata = np.zeros(xdata.shape)[1]
 for i in range(1000):
     fdata[i]=dci(xdata[:,i])
 fdata = fdata.reshape(-1,1)
 # 'quadratic surrogate'
-sub_sp = ss.subspaces.Subspaces()
-sub_sp.compute(X=xdata.T,f=fdata,sstype='QPHD')
+#surrogate model:
+g_surr = ss.utils.response_surfaces.PolynomialApproximation(N=1)
+g_surr.train(xdata,fdata, regul = test2.regul) #regul = self.var)
+#pushforward of surrogate
+
+
