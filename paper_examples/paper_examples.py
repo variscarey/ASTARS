@@ -203,15 +203,11 @@ for f in {nest}:
         test.get_h()
         # adapt every f.adapt timesteps using quadratic(after inital burn)
         test.train_method = 'GQ'
-<<<<<<< HEAD
-        test.adapt = f.adapt # Sets number of sub-cylcing steps
-=======
+
         test.adapt = f.adapt # Sets retraining steps
-        
         #test.subcycle = True # turn on subcycling
         test.threshadapt = True
 
->>>>>>> 7731aa002c82699f665eca5dc022239646e5073c
         #test.debug = True
         test.regul = f.regul
         test.threshold = f.threshold
